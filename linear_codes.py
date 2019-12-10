@@ -1,11 +1,15 @@
+# Модуль для работы с Линейными Блочными (n,k) Кодами
 from random import randint
 import operator
 from functools import reduce
 from itertools import product
 from copy import deepcopy
 
+# Проверяет вложенный список на соответствие матрице размером (rows, cols)
+# Возвращает кортеж в виде (размеры матрицы, флаг проверки)
 def check_matrix(M):
     rows = len(M)
+    assert(rows > 0)
     nn = len(reduce(operator.iconcat, M, []))
     cols = nn // rows
     ok = True
@@ -13,7 +17,9 @@ def check_matrix(M):
         ok = ok and (len(M[r]) == cols)
     return (rows, cols, ok)
 
+# Возвращает пару различных случайных целых чисел из отрезка [0, n-1]
 def get_random_pair(n):
+    assert(n > 0)
     i1 = 0
     i2 = 0
     while i1 == i2:
@@ -21,6 +27,7 @@ def get_random_pair(n):
         i2 = randint(1, n) - 1
     return (i1, i2)
 
+# Объединяет две матрицы с одинаковым числом строк в одну
 def augment(I, Q):
     k = len(I)
     k2 = len(Q)
@@ -30,6 +37,7 @@ def augment(I, Q):
         R.append(I[row] + Q[row])
     return R
 
+# Возвращает единичную матрицу
 def identity(k):
     z = [0] * k
     I = []
@@ -38,12 +46,14 @@ def identity(k):
         I[row][row] = 1
     return I
 
+# Возвращает сумму (по модулю два) двух векторов
 def xor(x, y):
     assert(len(x) == len(y))
     mod2 = [2] * len(x)
     z = list(map(operator.add, x, y))
     return list(map(operator.mod, z, mod2))
 
+# Возвращает произведение вектора на матрицу
 def mult(v, M):
     k = len(v)
     params = check_matrix(M)
@@ -57,53 +67,12 @@ def mult(v, M):
             result = xor(result, M[r])
     return result
 
+# Возвращает случайный двоичный вектор
 def get_rand_bits(n):
     return [randint(0, 1) for _ in range(n)]
 
-def add_row_with_sys(G_sys, g):
-    G_sys.append(g[:])
-    params = check_matrix(G_sys)
-    k = params[0]
-    n = params[1]
-    assert(params[2] == True)
-    g_tmp = G_sys[-1]
-    result = False
-    if k == 1:
-        result = bool(g_tmp[0])
-    else:
-        # Append row with reduce matrix to Upper Triangular
-        for c in range(k-1):
-            if g_tmp[c] == 1:
-                g_tmp = xor(g_tmp, G_sys[c])
-        G_sys[-1] = g_tmp
-        result = bool(g_tmp[k-1])
-    if not result:
-        G_sys.pop()
-    else:
-    # convert Upper Triangular matrix to Diagonal
-        for r in range(k - 1):
-            g_tmp = G_sys[r]
-            for c in range(r + 1, k):
-                if g_tmp[c] == 1:
-                    g_tmp = xor(g_tmp, G_sys[c])
-            G_sys[r] = g_tmp
-    return result
-
-def gen_matrix_tmp(n, k):
-    assert(n > 1)
-    assert(k < n)
-    G = []
-    G_sys = []
-    i_gen = 0
-    for _ in range(k):
-        basisOk = False
-        while not basisOk:
-            g = get_rand_bits(n)
-            i_gen += 1
-            basisOk = add_row_with_sys(G_sys, g)
-        G.append( g )
-    return (G, G_sys, i_gen)
-
+# Возвращает случайную порождающую матрицу линейного (n, k) кода
+# в систематической форме G = [I, Q]
 def gen_matrix(n, k):
     assert(n > 1)
     assert(k < n)
@@ -117,6 +86,8 @@ def gen_matrix(n, k):
     G = augment(I, Q)
     return G
 
+# По порождающей матрице G возвращает множество кодовых векторов, а также
+# спектр кода и кодовое расстояние
 def gen_code(G):
     k = len(G)
     it = product([0,1], repeat = k)
@@ -136,9 +107,12 @@ def gen_code(G):
     d = list(ws_.keys())
     v = list(ws_.values())
     dmin = min(d)
-    dave = sum(list(map(operator.mul, d, v))) / sum(v)
-    return (code, ws, dmin, dave)
+    return (code, ws, dmin)
 
+# Возвращает перемешанную матрицу
+# В перемешивание входит суммирование случайных пар строк и запись результата
+# в одну из этих строк - эта процедура выполняется nsh раз. После опционально,
+# если with_columns = True, делается перестановка столбцов nsh раз
 def shuffle_matrix(M, nsh, with_columns):
     k = len(M)
     result = deepcopy(M)
