@@ -1,3 +1,4 @@
+# Модуль для проверки ответов к Заданию № 01
 from openpyxl import load_workbook
 from openpyxl.styles import Font
 import linear_codes as lc
@@ -6,9 +7,11 @@ import operator
 from functools import reduce
 from pprint import pprint as pp
 
+# Проверяет состоит ли вектор только из 0 и 1
 def is_bits_vector(v):
     return all(map(lambda x: (x == 0) or (x == 1), v))
 
+# Проверяет состоит ли вектор только из чисел типа int
 def is_int_vector(v):
     return all(map(lambda x: isinstance(x, int), v))
 
@@ -22,6 +25,7 @@ student = 'IvanovAA'
 task_code = '01'
 group = '1B6'
 
+# Ограничения на параметры (n, k) кода
 min_n = 6
 max_n = 15
 min_k = 3
@@ -38,11 +42,11 @@ ws = wb['Main']
 G = []
 parameters = []
 for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 13 + 2**max_k, values_only = True):
-    row = list(filter(None.__ne__, row))
+    row = list(filter(None.__ne__, row)) # Убирает ненужные None
     g_Ok = is_bits_vector(row)
     n = len(row)
     if g_Ok and n >= min_n and n <= max_n:
-        G.append(row)
+        G.append(row) # Читаем порождающую матрицу G кода
     if len(row) == 1 and isinstance(row[0], int):
         parameters.append(row[0])
 pp(G)
@@ -100,7 +104,7 @@ for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 1 + 2**max_k, v
     g_Ok = is_bits_vector(row)
     n = len(row)
     if g_Ok and n >= min_n and n <= max_n:
-        C_.append(row)
+        C_.append(row) # Читаем множество кодовых векторов
 
 print('Правильный код')
 pp(C)
@@ -119,15 +123,11 @@ tmp_ = []
 for row in wsSp.iter_rows(min_row = 1, max_col = max_n + 1, max_row = 5, values_only = True):
     row = list(filter(None.__ne__, row))
     g_Ok = is_int_vector(row)
-    # pp(row)
-    # pp(g_Ok)
     n = len(row)
     if g_Ok and n <= max_n + 1:
         tmp_.append(row)
 
 assert(len(tmp_) == 2)
-
-# spC_ = dict(zip(tmp_[0], tmp_[1]))
 
 spC_ = dict((k, v) for k, v in zip(tmp_[0], tmp_[1]) if v > 0)
 

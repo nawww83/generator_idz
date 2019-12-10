@@ -1,3 +1,4 @@
+# Модуль генерирует файл с Заданием № 01
 from openpyxl import Workbook
 from openpyxl.styles import Font
 import linear_codes as lc
@@ -14,6 +15,7 @@ student = 'IvanovAA'
 task_code = '01'
 group = '1B6'
 
+# Ограничения на параметры (n, k) кода
 min_n = 6
 max_n = 15
 min_k = 3
@@ -24,6 +26,7 @@ assert(max_k < max_n)
 
 hf = Font(name = 'Calibri', bold = True)
 
+# Генерация случайных (n, k) так, что k < n
 while True:
     n = lc.randint(min_n, max_n)
     k = lc.randint(min_k, max_k)
