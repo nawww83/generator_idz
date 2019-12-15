@@ -35,8 +35,15 @@ while True:
 
 r = n - k
 
-print(f'(n,k) = ({n},{k})')
-G = lc.gen_matrix(n, k)
+print(f'Введите нижнюю границу кодового расстояния (n, k)-кода ({n},{k})')
+print(f'Рекомендуется не более {max( (n-k+1) // 2, 2 )}')
+try:
+    d_low_bound = int(input())
+except:
+    d_low_bound = 2
+print(f'Подождите идет подбор порождающей матрицы G с кодовым \
+расстоянием не ниже {d_low_bound}...')
+G = lc.gen_matrix(n, k, d_low_bound)
 Gsh = lc.shuffle_matrix(G, n, True)
 
 print('Порождающая матрица G в систематической форме')

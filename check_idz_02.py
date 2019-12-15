@@ -41,7 +41,7 @@ wb = load_workbook(fname)
 
 ws = wb['Main']
 G = []
-for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 4 + max_k, values_only = True):
+for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 2 + max_k, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     g_Ok = is_bits_vector(row)
     n = len(row)
@@ -57,11 +57,10 @@ assert(p[2])
 print('Порождающая матрица кода')
 pp(G)
 
-
 parameters = []
 H_ = []
 wsC = wb['Check']
-for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - max_k, values_only = True):
+for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - min_k, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     h_Ok = is_bits_vector(row)
     n = len(row)
@@ -72,14 +71,17 @@ for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - max
 
 
 assert((len(parameters) == 1))
-pp(parameters)
 
 d_ = parameters[0]
 d = lc.gen_code(G)[2]
+print('Подождите идет подбор матрицы H...')
 H = lc.get_check_matrix(G)
+d_alter = lc.get_code_distance(H)
 
 print('Правильные ответы:')
-pp(f'd = {d}')
+pp(f'd = {d}, альтернативный метод d = {d_alter}')
+
+assert(d == d_alter)
 
 print('Введенные ответы:')
 pp(f'd = {d_}')

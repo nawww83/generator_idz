@@ -41,7 +41,7 @@ wb = load_workbook(fname)
 ws = wb['Main']
 G = []
 parameters = []
-for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 13 + 2**max_k, values_only = True):
+for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 16 + max_k, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     g_Ok = is_bits_vector(row)
     n = len(row)

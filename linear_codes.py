@@ -4,6 +4,7 @@ from random import randint
 import operator
 from functools import reduce
 from itertools import product
+from itertools import combinations
 from copy import deepcopy
 
 # Возвращает кортеж в виде (размеры матрицы, флаг проверки)
@@ -58,6 +59,9 @@ def xor(x, y):
 def xor1(v):
     return reduce(lambda x, y: (x + y) % 2, v)
 
+def hamming_weight(v):
+    return len(list(filter(lambda x: x != 0 , v)))
+
 # Возвращает произведение вектора на матрицу
 def mult_v(v, M):
     k = len(v)
@@ -95,18 +99,30 @@ def get_rand_bits(n):
     return [randint(0, 1) for _ in range(n)]
 
 # Возвращает случайную порождающую матрицу линейного (n, k) кода
-# в систематической форме G = [I, Q]
-def gen_matrix(n, k):
+# в систематической форме G = [I, Q] с кодовым расстоянием не ниже d_low
+def gen_matrix(n, k, d_low):
     assert(n > 1)
     assert(k < n)
-    G = []
     I = identity(k)
-    Q = []
     r = n - k
-    for _ in range(k):
-        q = get_rand_bits(r)
-        Q.append(q)
-    G = augment(I, Q)
+    while True:
+        G = []
+        Q = []
+        w_min = r
+        for _ in range(k):
+            q = get_rand_bits(r)
+            w = hamming_weight(q)
+            w_min = min(w, w_min)
+            Q.append(q)
+        d_high = w_min + 1 # Оценка кодового расстояния сверху
+        if d_high < d_low:
+            continue
+        G = augment(I, Q)
+        d = gen_code(G)[2] # Вычисление кодового расстояния
+        if d < d_low:
+            continue
+        else:
+            break
     return G
 
 # По порождающей матрице G возвращает множество кодовых векторов, а также
@@ -131,6 +147,39 @@ def gen_code(G):
     v = list(ws_.values())
     dmin = min(d)
     return (code, ws, dmin)
+
+# Возвращает True, если в матрице M найдется ровно m линейно зависимых строк
+def exists_linear_dependence(M, m, rows):
+    assert(m <= rows)
+    result = False
+    it = combinations(range(rows), m)
+    for index in it:
+        w = [0] * rows
+        for i in index:
+            w[i] = 1
+        l = mult_v(w, M) # Линейная комбинация строк с весами w
+        result = (sum(l) == 0)
+        if result:
+            break
+    return result
+
+# Возвращает кодовое расстояние (n, k)-кода по его проверочной матрице
+# Последовательно начиная с m = 1 ищет первую попавшуюся группу из m линейно
+# зависимых столбцов матрицы H. При этом кодовое расстояние равно d = m.
+def get_code_distance(H):
+    params = check_matrix(H)
+    r = params[0]
+    n = params[1]
+    assert(params[2])
+    Ht = transpose(H)
+    d = 1
+    while True:
+        res = exists_linear_dependence(Ht, d, n)
+        if res:
+            break
+        else:
+            d += 1
+    return d
 
 # Возвращает перемешанную матрицу
 # 1. Суммируется случайная пара строк, результат записывается в одну из 
@@ -201,6 +250,26 @@ def tune_uniq_unity_columns(iloc, m, M):
 def transpose(X):
     return list(map(list, zip(*X)))
 
+# Возвращает матрицу, эквивалентную M, такую, что она содержит базисные столбцы
+# Также возвращает индексы базисных строк iloc и небазисных niloc
+# Необходимо передавать верное число строк rows и столбцов cols, а также
+# правильную матрицу M, т.к. функция не контролирует правильность.
+def reduce_to_basis(M, rows, cols):
+    Msh = M
+    iloc = find_unity_columns(Msh)
+    iloc = tune_uniq_unity_columns(iloc, rows, Msh)
+    # Перетасовываем матрицу M до тех пор, пока не получим матрицу, содержащую
+    # rows уникальных единичных столбцов - базис
+    while not iloc:
+        Msh = shuffle_matrix(M, cols, False)
+        iloc = find_unity_columns(Msh)
+        iloc = tune_uniq_unity_columns(iloc, rows, Msh)
+    assert(len(iloc) == rows)
+    # Индексы остальных столбцов - не базис
+    niloc = list(set(range(cols)) - set(iloc))
+    niloc.sort()
+    return (Msh, iloc, niloc)
+
 # Возвращает проверочную матрицу H линейного кода по его порождающей матрице G
 def get_check_matrix(G):
     params = check_matrix(G)
@@ -208,19 +277,10 @@ def get_check_matrix(G):
     n = params[1]
     assert(params[2])
     pi = list(range(n)) # Вектор перестановок
-    Gsh = G
-    iloc = find_unity_columns(Gsh)
-    iloc = tune_uniq_unity_columns(iloc, k, Gsh)
-    # Перетасовываем матрицу G до тех пор, пока не получим матрицу, содержащую
-    # k уникальных единичных столбцов - базис
-    while not iloc:
-        Gsh = shuffle_matrix(G, n, False)
-        iloc = find_unity_columns(Gsh)
-        iloc = tune_uniq_unity_columns(iloc, k, Gsh)
-    assert(len(iloc) == k)
-    # Индексы остальных столбцов - не базис
-    niloc = list(set(range(n)) - set(iloc))
-    niloc.sort()
+    BS = reduce_to_basis(G, k, n)
+    Gsh = BS[0]
+    iloc = BS[1]
+    niloc = BS[2]
     Gsht = transpose(Gsh)
     for c in iloc:
         i = Gsht[c].index(1) # Позиция единицы в столбце
