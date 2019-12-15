@@ -1,12 +1,13 @@
-# Модуль для работы с Линейными Блочными (n,k) Кодами
+# Модуль для работы с двоичными Линейными Блочными (n,k) Кодами
+# Для хранения матриц и векторов использует список list() из чисел 0 и 1
 from random import randint
 import operator
 from functools import reduce
 from itertools import product
 from copy import deepcopy
 
-# Проверяет вложенный список на соответствие матрице размером (rows, cols)
 # Возвращает кортеж в виде (размеры матрицы, флаг проверки)
+# Проверяет вложенный список на соответствие матрице размером (rows, cols)
 def check_matrix(M):
     rows = len(M)
     assert(rows > 0)
@@ -46,19 +47,19 @@ def identity(k):
         I[row][row] = 1
     return I
 
-# Возвращает сумму (по модулю два) двух векторов
+# Возвращает сумму по модулю два двух векторов
 def xor(x, y):
     assert(len(x) == len(y))
     mod2 = [2] * len(x)
     z = list(map(operator.add, x, y))
     return list(map(operator.mod, z, mod2))
 
+# Возврашает сумму по модулю два элементов вектора v
 def xor1(v):
     return reduce(lambda x, y: (x + y) % 2, v)
 
-
 # Возвращает произведение вектора на матрицу
-def mult(v, M):
+def mult_v(v, M):
     k = len(v)
     params = check_matrix(M)
     k_ = params[0]
@@ -72,7 +73,7 @@ def mult(v, M):
     return result
 
 # Возвращает произведение двух матриц
-def multM(A, B):
+def mult_M(A, B):
     paramsA = check_matrix(A)
     paramsB = check_matrix(B)
     kA = paramsA[0]
@@ -116,7 +117,7 @@ def gen_code(G):
     code = []
     ws = {}
     for a in it:
-        s = mult(a, G)
+        s = mult_v(a, G)
         w = sum(s)
         if w in ws:
             ws[w] += 1
@@ -132,100 +133,109 @@ def gen_code(G):
     return (code, ws, dmin)
 
 # Возвращает перемешанную матрицу
-# В перемешивание входит суммирование случайных пар строк и запись результата
-# в одну из этих строк - эта процедура выполняется nsh раз. После опционально,
-# если with_columns = True, делается перестановка столбцов nsh раз
-def shuffle_matrix(M, nsh, with_columns):
-    k = len(M)
+# 1. Суммируется случайная пара строк, результат записывается в одну из 
+# этих строк. Процедура выполняется n_sh раз. Затем, если with_columns = True, 
+# делается перестановка столбцов n_sh раз
+def shuffle_matrix(M, n_sh, with_columns):
+    rows = len(M)
     result = deepcopy(M)
-    for i in range(nsh):
-        (i1, i2) = get_random_pair(k)
+    for i in range(n_sh):
+        (i1, i2) = get_random_pair(rows)
         g1 = result[i1]
         g2 = result[i2]
         b = randint(0, 1)
         result[i1 * b + i2 * (1 - b)] = xor(g1, g2)
     if with_columns:
         params = check_matrix(result)
-        n = params[1]
+        cols = params[1]
         assert(params[2])
-        for i in range(nsh):
-            (i1, i2) = get_random_pair(n)
-            for j in range(k):
+        for i in range(n_sh):
+            (i1, i2) = get_random_pair(cols)
+            for j in range(rows):
                 result[j][i1], result[j][i2] = result[j][i2], result[j][i1]
     return result
 
-# Делает перестановку p столбцов матрицы M
-# Методом копирования в буфер
+# Возвращает матрицу, полученную путем перестановки столбцов матрицы M по 
+# правилу p, в котором указаны индексы куда переставлять столбцы
 def permute_columns(M, p):
     params = check_matrix(M)
-    k = params[0]
-    n = params[1]
+    rows = params[0]
+    cols = params[1]
     assert(params[2])
-    assert(len(p) > 0)
-    resultT = deepcopy(transpose(M))
+    assert(len(p) == cols)
+    resultT = transpose(M)
     resultT_tmp = deepcopy(resultT)
-    for i in range(n):
+    for i in range(cols):
         i_to = p[i]
         if i != i_to:
             resultT_tmp[i_to] = resultT[i]
     return transpose(resultT_tmp)
 
-# Возвращает индексы всех единичных столбцов матрицы G в порядке возрастания
-# Единичный столбец - это столбец с единичным хемминговым весом
-def find_unity_columns(G):
-    tmp = list(map(sum, zip(*G)))
-    iloc = [i for i, e in enumerate(tmp) if e == 1]
+# Возвращает индексы (в порядке возрастания) всех единичных столбцов матрицы M
+# Единичный столбец - это столбец с единственным ненулевым элементом равным 
+# единице. Определяется по сумме элементов (для двоичных кодов это справедливо).
+def find_unity_columns(M):
+    MT = list(map(sum, zip(*M)))
+    iloc = [i for i, e in enumerate(MT) if e == 1]
     return iloc
 
-# По индексам всех единичных столбцов матрицы G возвращает индексы k уникальных
-# столбцов если это возможно; в противном случае возвращает пустой список
-def tune_uniq_unity_columns(iloc, k, G):
-    GT = transpose(G)
+# Возвращает индексы m уникальных столбцов если их возможно найти 
+# (в порядке iloc), в противном случае возвращает пустой список.
+# Требует предварительного определения индексов iloc всех единичных столбцов
+# матрицы M.
+def tune_uniq_unity_columns(iloc, m, M):
+    MT = transpose(M)
     d = set()
     iloc_ = {}
     for i in iloc:
-        index = GT[i].index(1)
+        index = MT[i].index(1)
         if index not in d:
             iloc_[index] = i
         d.add(index)
-    if len(d) >= k:
+    if len(d) >= m:
         return list(iloc_.values())
     else:
         return []
-# Транспонирует матрицу x
-def transpose(x):
-    return list(map(list, zip(*x)))
 
-# Возвращает проверочную матрицу H кода по его порождающей матрице G
+# Возвращает транспонированную матрицу, т.е. Y = X^T
+def transpose(X):
+    return list(map(list, zip(*X)))
+
+# Возвращает проверочную матрицу H линейного кода по его порождающей матрице G
 def get_check_matrix(G):
-    k = len(G)
     params = check_matrix(G)
-    k2 = params[0]
+    k = params[0]
     n = params[1]
     assert(params[2])
-    pi = list(range(n))
+    pi = list(range(n)) # Вектор перестановок
     Gsh = G
     iloc = find_unity_columns(Gsh)
-    iloc_ = tune_uniq_unity_columns(iloc, k, Gsh)
+    iloc = tune_uniq_unity_columns(iloc, k, Gsh)
     # Перетасовываем матрицу G до тех пор, пока не получим матрицу, содержащую
-    # k уникальных единичныйх столбцов - базис
-    while not iloc_:
+    # k уникальных единичных столбцов - базис
+    while not iloc:
         Gsh = shuffle_matrix(G, n, False)
         iloc = find_unity_columns(Gsh)
-        iloc_ = tune_uniq_unity_columns(iloc, k, Gsh)
-    assert(len(iloc_) == k)
-    niloc = list(set(range(n)) - set(iloc_))
+        iloc = tune_uniq_unity_columns(iloc, k, Gsh)
+    assert(len(iloc) == k)
+    # Индексы остальных столбцов - не базис
+    niloc = list(set(range(n)) - set(iloc))
     niloc.sort()
     Gsht = transpose(Gsh)
-    for c in iloc_:
-        i = Gsht[c].index(1)
+    for c in iloc:
+        i = Gsht[c].index(1) # Позиция единицы в столбце
+        # Указываем размещение единичных столбцов Gsh в порядке 
+        # единичной матрицы
         pi[i] = c
-    i = 0
-    for c in niloc:
-        pi[i + k] = c
-        i += 1
+    # Для остальных столбцов Gsh указываем размещение после единичной матрицы 
+    # в порядке возрастания их индексов
+    pi[k:] = niloc
+    # Из небазисных столбцов формируем матрицу Q^T
     Qt = [Gsht[i] for i in niloc]
+    # Формируем проверочную матрицу H в систематической форме
     H = augment(Qt, identity(n - k))
+    # Переставляем столбцы H для приведения матрицы в соответствие с кодом,
+    # образованным порождающей матрицей G
     Hp = permute_columns(H, pi)
     return Hp
 

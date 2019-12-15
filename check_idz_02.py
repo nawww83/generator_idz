@@ -41,44 +41,41 @@ wb = load_workbook(fname)
 
 ws = wb['Main']
 G = []
-H_ = []
-parameters = []
-i = 0
-G_fulled = False
-H_fulled = False
-for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 6 + max_n, values_only = True):
+for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 4 + max_k, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     g_Ok = is_bits_vector(row)
     n = len(row)
     if g_Ok and n >= min_n and n <= max_n:
-        if not G_fulled:
-            G.append(row) # Читаем матрицы кода
-        else:
-            H_.append(row)
-        i += 1
-    elif n == 1 and isinstance(row[0], int):
-        parameters.append(row[0])
-    elif not G_fulled and G:
-        G_fulled = True
-    elif G_fulled and not H_fulled and H_:
-        H_fulled = True
+        G.append(row) # Читаем матрицу кода
 
 p = lc.check_matrix(G)
 k = p[0]
 n = p[1]
+r = n - k
 assert(p[2])
 
-r = n - k
-
+print('Порождающая матрица кода')
 pp(G)
-pp(parameters)
+
+
+parameters = []
+H_ = []
+wsC = wb['Check']
+for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - max_k, values_only = True):
+    row = list(filter(None.__ne__, row)) # Убирает ненужные None
+    h_Ok = is_bits_vector(row)
+    n = len(row)
+    if h_Ok and n >= min_n and n <= max_n:
+        H_.append(row) # Читаем матрицу кода
+    elif n == 1 and isinstance(row[0], int):
+        parameters.append(row[0])
+
 
 assert((len(parameters) == 1))
+pp(parameters)
 
 d_ = parameters[0]
-
 d = lc.gen_code(G)[2]
-
 H = lc.get_check_matrix(G)
 
 print('Правильные ответы:')
@@ -95,15 +92,12 @@ pp(H)
 print('Введенная проверочная матрица кода')
 pp(H_)
 
-zero = sum(map(sum, lc.multM(G, lc.transpose(H))))
-zero_ = sum(map(sum, lc.multM(G, lc.transpose(H_))))
+zero = sum(map(sum, lc.mult_M(G, lc.transpose(H))))
+zero_ = sum(map(sum, lc.mult_M(G, lc.transpose(H_))))
 
-print('Контроль нуля ')
-pp(zero)
-pp(zero_)
-
-ok = (zero == zero_)
-
+print('Контроль правильности проверочной матрицы')
+ok = (zero == zero_ == 0)
+pp(ok)
 assert(ok)
 
 pp('All Ok')

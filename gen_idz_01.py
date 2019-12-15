@@ -33,7 +33,6 @@ while True:
     if k < n:
         break
 
-print(f'(n,k) = ({n},{k})')
 G = lc.gen_matrix(n, k)
 Gsh = lc.shuffle_matrix(G, n, True)
 
@@ -65,6 +64,7 @@ for g_r in Gsh:
     ws.append(g_r)
 
 ws.append(['Введите ответы:'])
+ws.cell(row = ws.max_row, column = 1).font = hf
 ws.append(['Длина кода n:'])
 ws.append([0])
 ws.append(['Число информационных символов k:'])

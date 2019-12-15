@@ -50,16 +50,18 @@ ws = wb.active
 ws.title = 'Main'
 
 ws['A1'].font = hf
-ws['A1'] = 'Порождающая матрица G'
+ws['A1'] = f'Порождающая матрица G (n, k)-кода ({n},{k})'
 for g_r in Gsh:
     ws.append(g_r)
 
-ws.append(['Введите ответы:'])
-ws.append(['Проверочная матрица H:'])
+wsC = wb.create_sheet('Check')
+wsC.append(['Введите ответы:'])
+wsC.cell(row = wsC.max_row, column = 1).font = hf
+wsC.append(['Проверочная матрица H:'])
 for _ in range(r):
-    ws.append(lc.get_rand_bits(n))
-ws.append(['Кодовое расстояние кода dк:'])
-ws.append([0])
+    wsC.append(lc.get_rand_bits(n))
+wsC.append(['Кодовое расстояние кода dк:'])
+wsC.append([0])
 
 wb.save(f'{student}_{task_code}_{group}.xlsx')
 

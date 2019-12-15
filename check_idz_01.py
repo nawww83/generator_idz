@@ -47,10 +47,11 @@ for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 13 + 2**max_k, v
     n = len(row)
     if g_Ok and n >= min_n and n <= max_n:
         G.append(row) # Читаем порождающую матрицу G кода
-    if len(row) == 1 and isinstance(row[0], int):
+    if n == 1 and isinstance(row[0], int):
         parameters.append(row[0])
+
+print('Порождающая матрица кода')
 pp(G)
-pp(parameters)
 
 p = lc.check_matrix(G)
 k = p[0]
@@ -116,6 +117,7 @@ ok = True
 for c in C:
     ok = ok and (c in C_)
 
+pp(ok)
 assert(len(C) == len(C_) and ok)
 
 wsSp = wb['CodeSpectrum']
