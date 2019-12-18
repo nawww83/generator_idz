@@ -1,6 +1,7 @@
 # Модуль для работы с двоичными Линейными Блочными (n,k) Кодами
 # Для хранения матриц и векторов использует список list() из чисел 0 и 1
 from random import randint
+from random import choice
 import operator
 from functools import reduce
 from itertools import product
@@ -179,21 +180,33 @@ def get_code_distance(H):
             break
         else:
             d += 1
+            print(f'... at distance {d} estimation...', flush = True)
     return d
 
-# Возвращает перемешанную матрицу
-# 1. Суммируется случайная пара строк, результат записывается в одну из 
-# этих строк. Процедура выполняется n_sh раз. Затем, если with_columns = True, 
-# делается перестановка столбцов n_sh раз
-def shuffle_matrix(M, n_sh, with_columns):
+# Возвращает перемешанную матрицу.
+# Суммируется случайная пара строк, результат записывается в одну из 
+# этих строк. Процедура выполняется n_sh раз. При этом строки с индексами
+# exclude_rows считаются блокированными так, что они не "испортят" других 
+# строк операцией xor, при этом сами могут быть "испорчеными", но только 
+# свободными строками, т.е. не принадлежащими списку exclude_rows.
+# Затем, если with_columns = True, делается перестановка столбцов n_sh раз.
+def shuffle_matrix(M, n_sh, with_columns, exclude_rows):
     rows = len(M)
     result = deepcopy(M)
+    locked_rows = set(exclude_rows)
     for i in range(n_sh):
-        (i1, i2) = get_random_pair(rows)
+        i1, i2 = get_random_pair(rows)
+        while i1 in locked_rows and i2 in locked_rows:
+            i1, i2 = get_random_pair(rows)
         g1 = result[i1]
         g2 = result[i2]
-        b = randint(0, 1)
-        result[i1 * b + i2 * (1 - b)] = xor(g1, g2)
+        if i1 in locked_rows:
+            result[i1] = xor(g1, g2)
+        elif i2 in locked_rows:
+            result[i2] = xor(g1, g2)
+        else:
+            b = randint(0, 1)
+            result[i1 * b + i2 * (1 - b)] = xor(g1, g2)
     if with_columns:
         params = check_matrix(result)
         cols = params[1]
@@ -228,23 +241,19 @@ def find_unity_columns(M):
     iloc = [i for i, e in enumerate(MT) if e == 1]
     return iloc
 
-# Возвращает индексы m уникальных столбцов если их возможно найти 
-# (в порядке iloc), в противном случае возвращает пустой список.
-# Требует предварительного определения индексов iloc всех единичных столбцов
-# матрицы M.
-def tune_uniq_unity_columns(iloc, m, M):
+# Возвращает индексы i уникальных единичных столбцов в порядке iloc и позиции p 
+# единиц в этих столбцах в виде словаря {p: i}. Требует предварительного 
+# определения индексов iloc всех единичных столбцов матрицы M.
+def tune_uniq_unity_columns(iloc, M):
     MT = transpose(M)
     d = set()
     iloc_ = {}
     for i in iloc:
-        index = MT[i].index(1)
-        if index not in d:
-            iloc_[index] = i
-        d.add(index)
-    if len(d) >= m:
-        return list(iloc_.values())
-    else:
-        return []
+        p = MT[i].index(1)
+        if p not in d:
+            iloc_[p] = i
+        d.add(p)
+    return iloc_
 
 # Возвращает транспонированную матрицу, т.е. Y = X^T
 def transpose(X):
@@ -257,18 +266,71 @@ def transpose(X):
 def reduce_to_basis(M, rows, cols):
     Msh = M
     iloc = find_unity_columns(Msh)
-    iloc = tune_uniq_unity_columns(iloc, rows, Msh)
+    iloc = tune_uniq_unity_columns(iloc, Msh)
     # Перетасовываем матрицу M до тех пор, пока не получим матрицу, содержащую
     # rows уникальных единичных столбцов - базис
     while not iloc:
         Msh = shuffle_matrix(M, cols, False)
         iloc = find_unity_columns(Msh)
-        iloc = tune_uniq_unity_columns(iloc, rows, Msh)
+        iloc = tune_uniq_unity_columns(iloc, Msh)
     assert(len(iloc) == rows)
     # Индексы остальных столбцов - не базис
     niloc = list(set(range(cols)) - set(iloc))
     niloc.sort()
     return (Msh, iloc, niloc)
+
+# Версия 2. Алгоритмически ускорен расчет
+def reduce_to_basis_2(M, rows, cols):
+    assert(rows <= cols)
+    MT = transpose(M)
+    nonBasis = True
+    iloc_basis = set() # Индексы столбцов под базис
+    while nonBasis:
+        Msq, iloc_basis = get_random_square_submatrix(MT, rows, cols)
+        ir = 1
+        _nb = True
+        while ir <= rows:
+            _nb = exists_linear_dependence(Msq, ir, rows)
+            if _nb or ir == rows:
+                break
+            ir += 1
+        if ir == rows and _nb == False: # Если нигде не было линейной 
+        # зависимости, то нашли базис
+            nonBasis = False
+    Msh = shuffle_matrix(M, cols, False, [])
+    rows_locked = set()
+    while True:
+        where_unity = set(find_unity_columns(Msh))
+        active_unity = sorted(list(iloc_basis.intersection(where_unity)))
+        uniq_rowsp_cols = tune_uniq_unity_columns(active_unity, Msh)
+        rows_candidates = set(uniq_rowsp_cols.keys())
+        rows_for_locking = rows_candidates - rows_locked
+        rows_locked = rows_locked.union(rows_for_locking)
+        if len(rows_locked) == rows:
+            break
+        # Тасуем матрицу по двум строкам с учетом того, что нельзя портить
+        # сформированные единичные базисные столбцы. Указываются индексы строк,
+        # в которых стоит единица в единичных столбцах.
+        Msh = shuffle_matrix(Msh, 1, False, list(rows_locked))
+    # Индексы остальных столбцов - не базис
+    niloc = list(set(range(cols)) - set(iloc_basis))
+    niloc.sort()
+    return Msh, iloc_basis, niloc
+
+# Возвращает квадратную подматрицу размером (rows, rows) выбором случайных 
+# строк матрицы M, содержащей cols строк
+def get_random_square_submatrix(M, rows, cols):
+    assert(rows <= cols)
+    Sq = []
+    used = set()
+    free = list(range(cols))
+    while len(used) < rows:
+        i = choice(free)
+        if i not in used:
+            Sq.append(M[i])
+            used.add(i)
+            free.remove(i)
+    return Sq, used
 
 # Возвращает проверочную матрицу H линейного кода по его порождающей матрице G
 def get_check_matrix(G):
@@ -277,7 +339,8 @@ def get_check_matrix(G):
     n = params[1]
     assert(params[2])
     pi = list(range(n)) # Вектор перестановок
-    BS = reduce_to_basis(G, k, n)
+    # BS = reduce_to_basis(G, k, n)
+    BS = reduce_to_basis_2(G, k, n)
     Gsh = BS[0]
     iloc = BS[1]
     niloc = BS[2]

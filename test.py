@@ -1,12 +1,13 @@
 # Скрипт для тестирования модуля linear_codes.py
 import linear_codes as lc
 import time
+from pprint import pprint as pp
 
 # Ограничения на параметры (n, k) кода
-min_n = 6
-max_n = 20
+min_n = 7
+max_n = 17
 min_k = 3
-max_k = 10
+max_k = 13
 min_r = 3
 
 assert(min_k < min_n)
@@ -30,24 +31,26 @@ while True:
     t1 = time.perf_counter()
     print(f'Generation matrix {t1 - t0}', flush = True)
     t0 = time.perf_counter()
-    Gsh = lc.shuffle_matrix(G, n, True)
+    Gsh = lc.shuffle_matrix(G, n, True, [])
     t1 = time.perf_counter()
+    pp(f'Generator matrix: {Gsh}')
     print(f'Shuffle G matrix {t1 - t0}', flush = True)
-    #t0 = time.perf_counter()
-    #Hsh = lc.get_check_matrix(Gsh)
-    #t1 = time.perf_counter()
-    #print(f'Find check H matrix {t1 - t0}', flush = True)
-    #t0 = time.perf_counter()
-    #d = lc.get_code_distance(Hsh)
-    #t1 = time.perf_counter()
-    #print(f'Calc code distance by H matrix {t1 - t0}', flush = True)
+    t0 = time.perf_counter()
+    Hsh = lc.get_check_matrix(Gsh)
+    t1 = time.perf_counter()
+    pp(f'Check matrix: {Hsh}')
+    print(f'Find check H matrix {t1 - t0}', flush = True)
+    t0 = time.perf_counter()
+    d = lc.get_code_distance(Hsh)
+    t1 = time.perf_counter()
+    print(f'Calc code distance by H matrix {t1 - t0}', flush = True)
     t0 = time.perf_counter()
     Code, Wsp, dist = lc.gen_code(Gsh)
     t1 = time.perf_counter()
     print(f'Calc code, spectrum and distance by G matrix {t1 - t0}', flush = True)
-    print(f'd_max = {d_max}, d_low = {d_low}, d = {dist}', flush = True)
-    #assert(d == dist)
-    #assert(d >= d_low)
+    print(f'd_max = {d_max}, d_low = {d_low}, d = {d}, d_dist = {dist}', flush = True)
+    assert(d == dist)
+    assert(d >= d_low)
     assert(dist >= d_low)
     assert(Wsp[0] == 1)
     assert(sum(Wsp.values()) == 2**k)
