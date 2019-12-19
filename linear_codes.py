@@ -194,19 +194,20 @@ def shuffle_matrix(M, n_sh, with_columns, exclude_rows):
     rows = len(M)
     result = deepcopy(M)
     locked_rows = set(exclude_rows)
-    for i in range(n_sh):
-        i1, i2 = get_random_pair(rows)
-        while i1 in locked_rows and i2 in locked_rows:
+    if rows > 1:
+        for i in range(n_sh):
             i1, i2 = get_random_pair(rows)
-        g1 = result[i1]
-        g2 = result[i2]
-        if i1 in locked_rows:
-            result[i1] = xor(g1, g2)
-        elif i2 in locked_rows:
-            result[i2] = xor(g1, g2)
-        else:
-            b = randint(0, 1)
-            result[i1 * b + i2 * (1 - b)] = xor(g1, g2)
+            while i1 in locked_rows and i2 in locked_rows:
+                i1, i2 = get_random_pair(rows)
+            g1 = result[i1]
+            g2 = result[i2]
+            if i1 in locked_rows:
+                result[i1] = xor(g1, g2)
+            elif i2 in locked_rows:
+                result[i2] = xor(g1, g2)
+            else:
+                b = randint(0, 1)
+                result[i1 * b + i2 * (1 - b)] = xor(g1, g2)
     if with_columns:
         params = check_matrix(result)
         cols = params[1]
@@ -243,8 +244,8 @@ def find_unity_columns(M):
 
 # Возвращает индексы i уникальных единичных столбцов в порядке iloc и позиции p 
 # единиц в этих столбцах в виде словаря {p: i}. Требует предварительного 
-# определения индексов iloc всех единичных столбцов матрицы M.
-def tune_uniq_unity_columns(iloc, M):
+# определения индексов iloc единичных столбцов матрицы M.
+def filter_uniq_unity_columns(iloc, M):
     MT = transpose(M)
     d = set()
     iloc_ = {}
@@ -266,7 +267,7 @@ def transpose(X):
 def reduce_to_basis(M, rows, cols):
     Msh = M
     iloc = find_unity_columns(Msh)
-    iloc = tune_uniq_unity_columns(iloc, Msh)
+    iloc = filter_uniq_unity_columns(iloc, Msh)
     # Перетасовываем матрицу M до тех пор, пока не получим матрицу, содержащую
     # rows уникальных единичных столбцов - базис
     while not iloc:
@@ -279,13 +280,13 @@ def reduce_to_basis(M, rows, cols):
     niloc.sort()
     return (Msh, iloc, niloc)
 
-# Версия 2. Алгоритмически ускорен расчет
-def reduce_to_basis_2(M, rows, cols):
+# Возвращает индексы столбцов M, которые могут быть базисными
+def find_basis_candidates(M, rows, cols):
     assert(rows <= cols)
     MT = transpose(M)
     nonBasis = True
-    iloc_basis = set() # Индексы столбцов под базис
-    while nonBasis:
+    iloc_basis = set() # Индексы столбцов M под базис
+    while nonBasis: # Пока не найден базис
         Msq, iloc_basis = get_random_square_submatrix(MT, rows, cols)
         ir = 1
         _nb = True
@@ -295,26 +296,38 @@ def reduce_to_basis_2(M, rows, cols):
                 break
             ir += 1
         if ir == rows and _nb == False: # Если нигде не было линейной 
-        # зависимости, то нашли базис
+        # зависимости, то нашли базис (линейно независимые столбцы M)
             nonBasis = False
-    Msh = shuffle_matrix(M, cols, False, [])
-    rows_locked = set()
+    return iloc_basis
+
+# Версия 2. Алгоритмически ускорен расчет
+# (rows, cols) - размеры матрицы M
+def reduce_to_basis_2(M, rows, cols):
+    # Индексы, закрепленные под базис
+    iloc_basis = find_basis_candidates(M, rows, cols)
+    Msh = M
+    rows_locked = [] # Индексы строк для блокировки
     while True:
+        # Ищем все единичные столбцы
         where_unity = set(find_unity_columns(Msh))
+        # Отбираем те индексы, которые пересекаются с закрепленными под базис.
+        # Сортируем по возрастанию.
         active_unity = sorted(list(iloc_basis.intersection(where_unity)))
-        uniq_rowsp_cols = tune_uniq_unity_columns(active_unity, Msh)
-        rows_candidates = set(uniq_rowsp_cols.keys())
-        rows_for_locking = rows_candidates - rows_locked
-        rows_locked = rows_locked.union(rows_for_locking)
-        if len(rows_locked) == rows:
+        # Отфильтровываем возможные повторяющиеся столбцы и одновременно
+        # определяем позиции единиц
+        uniq_cols = filter_uniq_unity_columns(active_unity, Msh)
+        # Индексы строк для блокировки уже сформированных единичных столбцов
+        rows_locked = uniq_cols.keys()
+        if len(rows_locked) == rows: # Все rows столбцов - единичные и разные
             break
-        # Тасуем матрицу по двум строкам с учетом того, что нельзя портить
-        # сформированные единичные базисные столбцы. Указываются индексы строк,
-        # в которых стоит единица в единичных столбцах.
-        Msh = shuffle_matrix(Msh, 1, False, list(rows_locked))
-    # Индексы остальных столбцов - не базис
+        # Тасуем матрицу путем xor двух случайных строк с учетом того, что
+        # нельзя "портить" уже сформированные единичные базисные столбцы. 
+        # Указываются индексы строк, в которых стоит единица соответствующего 
+        # единичного столбца.
+        Msh = shuffle_matrix(Msh, 1, False, rows_locked)
+    # Определяем индексы остальных столбцов - небазисных
     niloc = list(set(range(cols)) - set(iloc_basis))
-    niloc.sort()
+    niloc.sort() # Сортируем
     return Msh, iloc_basis, niloc
 
 # Возвращает квадратную подматрицу размером (rows, rows) выбором случайных 
