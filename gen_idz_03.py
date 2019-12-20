@@ -1,8 +1,9 @@
-# Модуль генерирует файл с Заданием № 02
+# Модуль генерирует файл с Заданием № 03
 from openpyxl import Workbook
 from openpyxl.styles import Font
 import linear_codes as lc
 import sys
+from random import choice
 from pprint import pprint as pp
 
 mjr = sys.version_info.major
@@ -12,7 +13,7 @@ if (mjr == 3 and mnr < 7) or mjr < 3:
     exit()
 
 student = 'IvanovAA'
-task_code = '02'
+task_code = '03'
 group = '1B6'
 
 # Ограничения на параметры (n, k) кода
@@ -36,7 +37,7 @@ while True:
 r = n - k
 
 print(f'Введите нижнюю границу кодового расстояния (n, k)-кода ({n}, {k})')
-print(f'Рекомендуется не более {max( (n-k+1) // 2, 2 )}')
+print(f'Рекомендуется не более {max( (n - k + 1) // 2, 2 )}')
 try:
     d_low_bound = int(input())
 except:
@@ -52,6 +53,30 @@ pp(G)
 print('Матрица G после тасовки')
 pp(Gsh)
 
+CW = lc.gen_code(Gsh)
+C = CW[0]
+d = CW[2]
+s = choice(C)
+
+print('Кодовое расстояние dк')
+pp(d)
+
+print('Выбранный кодовый вектор s')
+pp(s)
+
+qi = (d - 1) // 2 # Целевая кратность ошибки - кратность исправления
+p = 1. * qi / n # Средняя кратность случайной величины q = np
+e = lc.get_error_vector(n, p)
+q = lc.hamming_weight(e) # Получившаяся кратность ошибки
+
+print('Выпавший вектор ошибки e')
+pp(e)
+
+print('Кратность ошибки q')
+pp(q)
+
+v = lc.xor(s, e)
+
 wb = Workbook()
 ws = wb.active
 ws.title = 'Main'
@@ -60,6 +85,9 @@ ws['A1'].font = hf
 ws['A1'] = f'Порождающая матрица G (n, k)-кода ({n}, {k})'
 for g_r in Gsh:
     ws.append(g_r)
+
+ws.append(['Принятый кодовый вектор v'])
+ws.append(v)
 
 wsC = wb.create_sheet('Check')
 wsC.append(['Введите ответы:'])
@@ -70,5 +98,12 @@ for _ in range(r):
 wsC.append(['Кодовое расстояние кода dк:'])
 wsC.append([0])
 
-wb.save(f'{student}_{task_code}_{group}.xlsx')
+wsV = wb.create_sheet('CodeVector')
+wsV.append(['Введите ответы:'])
+wsV.cell(row = wsV.max_row, column = 1).font = hf
+wsV.append(['Декодированный кодовый вектор s:'])
+wsV.append(lc.get_rand_bits(n))
+wsV.append(['Информационный вектор a:'])
+wsV.append(lc.get_rand_bits(k))
 
+wb.save(f'{student}_{task_code}_{group}.xlsx')

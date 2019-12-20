@@ -2,6 +2,7 @@
 # Для хранения матриц и векторов использует список list() из чисел 0 и 1
 from random import randint
 from random import choice
+from random import random
 import operator
 from functools import reduce
 from itertools import product
@@ -98,6 +99,10 @@ def mult_M(A, B):
 # Возвращает случайный двоичный вектор
 def get_rand_bits(n):
     return [randint(0, 1) for _ in range(n)]
+
+# Возвращает случайный двоичный вектор ошибки с вероятностью ошибки p
+def get_error_vector(n, p):
+    return [int(random() < p) for _ in range(n)]
 
 # Возвращает случайную порождающую матрицу линейного (n, k) кода
 # в систематической форме G = [I, Q] с кодовым расстоянием не ниже d_low
@@ -375,3 +380,13 @@ def get_check_matrix(G):
     Hp = permute_columns(H, pi)
     return Hp
 
+# Возвращает декодированный кодовый вектор s по принятому вектору v и 
+# проверочной матрице H
+def correct(v, H):
+    
+    return s
+
+# Возвращает информационный вектор a по кодовому вектору s и 
+# порождающей матрице G
+def decode(s, G):
+    return a
