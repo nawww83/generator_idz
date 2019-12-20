@@ -69,6 +69,11 @@ for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - min
     elif n == 1 and isinstance(row[0], int):
         parameters.append(row[0])
 
+p = lc.check_matrix(H_)
+r = p[0]
+n = p[1]
+k = n - r
+assert(p[2])
 
 assert((len(parameters) == 1))
 

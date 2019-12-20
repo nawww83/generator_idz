@@ -380,11 +380,48 @@ def get_check_matrix(G):
     Hp = permute_columns(H, pi)
     return Hp
 
-# Возвращает декодированный кодовый вектор s по принятому вектору v и 
-# проверочной матрице H
-def correct(v, H):
-    
-    return s
+# Возвращает классы смежности {c: [e]} по проверочной матрице H кода.
+# Здесь c - вектор синдрома c = eH^T, [e] - набор соответствующих векторов 
+# ошибок
+def get_adjacent_classes(H):
+    params = check_matrix(H)
+    r = params[0]
+    n = params[1]
+    assert(params[2])
+    ac = {}
+    it = product([0,1], repeat = r)
+    for c in it:
+        address = tuple(c)
+        ac[address] = []
+    HT = transpose(H)
+    it = product([0,1], repeat = n)
+    for e in it:
+        c = mult_v(e, HT)
+        address = tuple(c)
+        ac[address].append(e)
+    return ac
+
+# Возвращает кортеж в виде декодированного кодового вектора s, вектора ошибки
+# e и синдрома c. Принятый вектор v декодируется на основании проверочной 
+# матрицы H кода и предварительно найденных с помощью get_adjacent_class() 
+# классов смежности ac. Стратегия декодирования основана на случайном выборе 
+# вектора ошибки из набора всех возможных векторов с наименьшим весом.
+def correct(v, H, ac):
+    c = mult_v(v, transpose(H))
+    if sum(c) == 0: # Ошибка необнаружена (или её нет)
+        return v
+    address = tuple(c)
+    es = ac[address]
+    ws = []
+    for e in es:
+        ws.append(hamming_weight(e))
+    min_w = min(ws) # Нулевой вектор ошибки исключен проверкой (sum(c) == 0)
+    es_min_w = []
+    for e in es:
+        if hamming_weight(e) == min_w:
+            es_min_w.append(e)
+    ec = choice(es_min_w) # Случайный выбор вектора ошибки с наименьшим весом
+    return xor(v, ec), ec, c
 
 # Возвращает информационный вектор a по кодовому вектору s и 
 # порождающей матрице G

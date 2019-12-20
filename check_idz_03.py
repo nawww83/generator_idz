@@ -44,12 +44,15 @@ G = []
 for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 4 + max_k, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     g_Ok = is_bits_vector(row)
-    n = len(row)
-    if g_Ok and n >= min_n and n <= max_n:
+    n_row = len(row)
+    if g_Ok and n_row >= min_n and n_row <= max_n:
         G.append(row) # Читаем матрицу кода
 
 # В конце считанной матрицы принятый кодовый вектор
 v = G.pop()
+
+print('Принятый кодовый вектор')
+pp(v)
 
 p = lc.check_matrix(G)
 k = p[0]
@@ -66,11 +69,17 @@ wsC = wb['Check']
 for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - min_k, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     h_Ok = is_bits_vector(row)
-    n = len(row)
-    if h_Ok and n >= min_n and n <= max_n:
+    n_row = len(row)
+    if h_Ok and n_row >= min_n and n_row <= max_n:
         H_.append(row) # Читаем матрицу кода
-    elif n == 1 and isinstance(row[0], int):
+    elif n_row == 1 and isinstance(row[0], int):
         parameters.append(row[0])
+
+p = lc.check_matrix(H_)
+r = p[0]
+n = p[1]
+k = n - r
+assert(p[2])
 
 assert((len(parameters) == 1))
 
@@ -110,10 +119,10 @@ a_ = []
 for row in wsV.iter_rows(min_row = 1, max_col = max_n, max_row = 6, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     g_Ok = is_bits_vector(row)
-    n = len(row)
-    if g_Ok and n >= min_n and n <= max_n:
+    n_row = len(row)
+    if g_Ok and n_row >= min_n and n_row <= max_n:
         s_.append(row) # Читаем декодированный кодовый вектор
-    if g_Ok and n >= min_k and n <= max_k:
+    if g_Ok and n_row >= min_k and n_row <= max_k:
         a_.append(row) # Читаем декодированный информационный вектор
 
 assert(len(s_) == 1)
@@ -128,7 +137,41 @@ k_ = len(a_)
 assert(n_ == n)
 assert(k_ == k)
 
+ac = lc.get_adjacent_classes(H)
+s_est, e, c = lc.correct(v, H, ac)
 
+print('Скорректированный кодовый вектор')
+pp(s_est)
+
+print('Синдром')
+pp(c)
+
+print('Класс смежности синдрома')
+pp(ac[tuple(c)])
+
+print('Введенный скорректированный кодовый вектор')
+pp(s_)
+
+zero = sum(lc.mult_v(s_est, lc.transpose(H)))
+zero_ = sum(lc.mult_v(s_, lc.transpose(H_)))
+
+assert(zero == zero_ == 0)
+
+e_ = lc.xor(v, s_)
+qe = lc.hamming_weight(e)
+qe_ = lc.hamming_weight(e_)
+
+assert(qe == qe_)
+
+print('Найденный вектор ошибки наименьшей кратности')
+pp(e)
+print('Кратность')
+pp(qe)
+
+print('Вектор ошибки, соответствующий введенному кодовому вектору')
+pp(e_)
+print('Кратность')
+pp(qe_)
 
 pp('All Ok')
 
