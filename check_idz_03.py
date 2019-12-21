@@ -173,5 +173,18 @@ pp(e_)
 print('Кратность')
 pp(qe_)
 
+a_est = lc.decode(s_est, G)
+a__ = lc.decode(s_, G)
+
+print('Информационный вектор')
+pp(a__)
+pp(s_)
+
+print('Введенный информационный вектор')
+pp(a_)
+pp(s_)
+
+assert(a__ == a_)
+
 pp('All Ok')
 

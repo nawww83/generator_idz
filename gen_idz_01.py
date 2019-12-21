@@ -42,7 +42,7 @@ except:
 print(f'Подождите идет подбор порождающей матрицы G с кодовым \
 расстоянием не ниже {d_low_bound}...')
 G = lc.gen_matrix(n, k, d_low_bound)
-Gsh = lc.shuffle_matrix(G, n, True, [])
+Gsh = lc.shuffle_matrix(G, n, True, [])[0]
 
 print('Порождающая матрица G в систематической форме')
 pp(G)

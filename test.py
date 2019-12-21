@@ -2,6 +2,7 @@
 import linear_codes as lc
 import time
 from pprint import pprint as pp
+from random import choice
 
 # Ограничения на параметры (n, k) кода
 min_n = 3
@@ -33,7 +34,7 @@ while True:
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'Shuffling G matrix...', flush = True)
     t0 = time.perf_counter()
-    Gsh = lc.shuffle_matrix(G, n, True, [])
+    Gsh = lc.shuffle_matrix(G, n, True, [])[0]
     t1 = time.perf_counter()
     # pp(f'Generator matrix: {Gsh}')
     print(f'Elapsed {t1 - t0} s', flush = True)
@@ -68,4 +69,43 @@ while True:
     assert(Wsp[0] == 1)
     assert(sum(Wsp.values()) == 2**k)
     assert(len(Code) == 2**k)
+    s = choice(Code)
+    print(f'Transmitted code vector s = {s}')
+    qi = (d - 1) // 2 # Целевая кратность ошибки - кратность исправления
+    p = 1. * qi / n # Средняя кратность случайной величины q = np
+    e = lc.get_error_vector(n, p)
+    q = lc.hamming_weight(e) # Получившаяся кратность ошибки
+    print(f'Error vector e = {e} with weight {q}')
+    v = lc.xor(s, e)
+    print(f'Received code vector v = {v}')
+    print(f'Generation adjacent classes...', flush = True)
+    t0 = time.perf_counter()
+    ac = lc.get_adjacent_classes(Hsh)
+    t1 = time.perf_counter()
+    print(f'Elapsed {t1 - t0} s', flush = True)
+    print(f'Correction received vector...', flush = True)
+    t0 = time.perf_counter()
+    s_est, e_, c_ = lc.correct(v, Hsh, ac)
+    t1 = time.perf_counter()
+    print(f'Elapsed {t1 - t0} s', flush = True)
+    print(f'Corrected code vector s_est = {s_est}')
+    print(f' by error vector e_ = {e_} and cyndrome c = {c_}')
+    print(f'Decoding corrected vector...', flush = True)
+    t0 = time.perf_counter()
+    a_est = lc.decode(s_est, Gsh)
+    t1 = time.perf_counter()
+    print(f'Elapsed {t1 - t0} s', flush = True)
+    print(f'Decoded vector a_est = {a_est}')
+    print(f'Check decoding result...', flush = True)
+    t0 = time.perf_counter()
+    s_ = lc.mult_v(a_est, Gsh)
+    t1 = time.perf_counter()
+    print(f'Elapsed {t1 - t0} s', flush = True)
+    assert(s_est == s_)
+    ok_corrected = (s == s_est)
+    assert( ((q <= qi) and ok_corrected) or (q > qi) )
+    if ok_corrected:
+        print(f'The error was corrected!')
+    else:
+        print(f'The error was not corrected(:')
 

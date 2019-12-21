@@ -188,7 +188,10 @@ def get_code_distance(H):
             print(f'... at distance {d} estimation...', flush = True)
     return d
 
-# Возвращает перемешанную матрицу.
+# Возвращает перемешанную матрицу, а также список соответствующих пар 
+# индексов (i1, i2), где i1 - индекс строки, которая перезаписала с помощью xor
+# строку с индексом i2. При перестановке столбцов i1 и i2 - индексы 
+# переставляемых столбцов.
 # Суммируется случайная пара строк, результат записывается в одну из 
 # этих строк. Процедура выполняется n_sh раз. При этом строки с индексами
 # exclude_rows считаются блокированными так, что они не "испортят" других 
@@ -199,6 +202,8 @@ def shuffle_matrix(M, n_sh, with_columns, exclude_rows):
     rows = len(M)
     result = deepcopy(M)
     locked_rows = set(exclude_rows)
+    shuffled_rows = []
+    shuffled_cols = []
     if rows > 1:
         for i in range(n_sh):
             i1, i2 = get_random_pair(rows)
@@ -208,20 +213,26 @@ def shuffle_matrix(M, n_sh, with_columns, exclude_rows):
             g2 = result[i2]
             if i1 in locked_rows:
                 result[i1] = xor(g1, g2)
+                shuffled_rows.append((i2, i1))
             elif i2 in locked_rows:
                 result[i2] = xor(g1, g2)
+                shuffled_rows.append((i1, i2))
             else:
                 b = randint(0, 1)
-                result[i1 * b + i2 * (1 - b)] = xor(g1, g2)
+                to_ = i1 * b + i2 * (1 - b)
+                from_ = i1 * (1 - b) + i2 * b
+                result[to_] = xor(g1, g2)
+                shuffled_rows.append((from_, to_))
     if with_columns:
         params = check_matrix(result)
         cols = params[1]
         assert(params[2])
         for i in range(n_sh):
             (i1, i2) = get_random_pair(cols)
+            shuffled_cols.append((i1, i2))
             for j in range(rows):
                 result[j][i1], result[j][i2] = result[j][i2], result[j][i1]
-    return result
+    return result, shuffled_rows, shuffled_cols
 
 # Возвращает матрицу, полученную путем перестановки столбцов матрицы M по 
 # правилу p, в котором указаны индексы куда переставлять столбцы
@@ -276,7 +287,7 @@ def reduce_to_basis(M, rows, cols):
     # Перетасовываем матрицу M до тех пор, пока не получим матрицу, содержащую
     # rows уникальных единичных столбцов - базис
     while not iloc:
-        Msh = shuffle_matrix(M, cols, False)
+        Msh = shuffle_matrix(M, cols, False)[0]
         iloc = find_unity_columns(Msh)
         iloc = tune_uniq_unity_columns(iloc, Msh)
     assert(len(iloc) == rows)
@@ -329,7 +340,7 @@ def reduce_to_basis_2(M, rows, cols):
         # нельзя "портить" уже сформированные единичные базисные столбцы. 
         # Указываются индексы строк, в которых стоит единица соответствующего 
         # единичного столбца.
-        Msh = shuffle_matrix(Msh, 1, False, rows_locked)
+        Msh = shuffle_matrix(Msh, 1, False, rows_locked)[0]
     # Определяем индексы остальных столбцов - небазисных
     niloc = list(set(range(cols)) - set(iloc_basis))
     niloc.sort() # Сортируем
@@ -408,22 +419,63 @@ def get_adjacent_classes(H):
 # вектора ошибки из набора всех возможных векторов с наименьшим весом.
 def correct(v, H, ac):
     c = mult_v(v, transpose(H))
-    if sum(c) == 0: # Ошибка необнаружена (или её нет)
-        return v
     address = tuple(c)
     es = ac[address]
     ws = []
     for e in es:
         ws.append(hamming_weight(e))
-    min_w = min(ws) # Нулевой вектор ошибки исключен проверкой (sum(c) == 0)
+    min_w = min(ws)
     es_min_w = []
     for e in es:
         if hamming_weight(e) == min_w:
             es_min_w.append(e)
     ec = choice(es_min_w) # Случайный выбор вектора ошибки с наименьшим весом
-    return xor(v, ec), ec, c
+    return xor(v, ec), list(ec), c
 
-# Возвращает информационный вектор a по кодовому вектору s и 
-# порождающей матрице G
+# Возвращает вектор w, являющийся решением системы линейных уравнений v = w * M
+# Матрица M должна быть квадратной
+def solve_le(v, M):
+    params = check_matrix(M)
+    rows = params[0]
+    assert(params[2])
+    assert(rows == params[1])
+    Msh = transpose(M)
+    rows_locked = [] # Индексы строк для блокировки
+    while True:
+        where_unity = find_unity_columns(Msh)
+        active_unity = sorted(where_unity)
+        uniq_cols = filter_uniq_unity_columns(active_unity, Msh)
+        # Индексы строк для блокировки уже сформированных единичных столбцов
+        rows_locked = uniq_cols.keys()
+        if len(rows_locked) == rows: # Все rows столбцов - единичные и разные
+            break
+        Msh, sh_rows, sh_cols = shuffle_matrix(Msh, 1, False, rows_locked)
+        for row in sh_rows:
+            v[row[1]] = (v[row[0]] + v[row[1]]) % 2
+    Msh = transpose(Msh)
+    where_unity = find_unity_columns(Msh)
+    uniq_cols = filter_uniq_unity_columns(active_unity, Msh)
+    w = [0] * rows
+    for key, val in uniq_cols.items():
+        w[key] = v[val]
+    return w
+
+# Возвращает информационный вектор a по кодовому вектору s и порождающей 
+# матрице G
 def decode(s, G):
+    params = check_matrix(G)
+    k = params[0]
+    n = params[1]
+    assert(params[2])
+    iloc_basis = find_basis_candidates(G, k, n)
+    GT = transpose(G)
+    s_cut = []
+    GT_cut = []
+    for i in iloc_basis:
+        s_cut.append(s[i])
+        GT_cut.append(GT[i])
+    G_cut = transpose(GT_cut)
+    a = solve_le(s_cut, G_cut)
     return a
+    
+    
