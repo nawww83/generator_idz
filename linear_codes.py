@@ -8,7 +8,9 @@ from functools import reduce
 from itertools import product
 from itertools import combinations
 from copy import deepcopy
-
+from scipy.special import comb
+import numpy as np
+ 
 # Возвращает кортеж в виде (размеры матрицы, флаг проверки)
 # Проверяет вложенный список на соответствие матрице размером (rows, cols)
 def check_matrix(M):
@@ -457,3 +459,35 @@ def decode(s, G):
     G_cut = transpose(GT_cut)
     a = solve_le(s_cut, G_cut)
     return a
+
+# По параметрам линейного (n, k)-кода разрешает неравенство Хемминга и 
+# возвращает наибольшую кратность исправляемой ошибки qi
+def resolve_hamming_constrain(n, k):
+    assert(k < n)
+    r = n - k
+    N_cyndromes = np.power(2., r)
+    qi = r // 4
+    N_errors = 0
+    for i in range(qi + 1):
+        N_errors += comb(n, i)
+    overhead = (N_errors > N_cyndromes)
+    step = False
+    while not step:
+        if overhead:
+            N_errors -= comb(n, qi)
+            qi -= 1
+        else:
+            N_errors += comb(n, qi)
+            qi += 1
+        step = overhead ^ (N_errors > N_cyndromes)
+        overhead = (N_errors > N_cyndromes)
+    if overhead:
+        N_errors -= comb(n, qi)
+        qi -= 1
+    return qi
+
+# Возвращает вероятность q-кратной ошибки в слове из n битов, если вероятность
+# ошибки в одном бите равна p. Ошибки независимые (BSC-канал).
+def probability_bsc(q, n, p):
+    return comb(n, q) * np.power(float(p), q) * np.power(1. - p, n - q)
+
