@@ -21,6 +21,7 @@ min_n = 6
 max_n = 15
 min_k = 3
 max_k = 5
+min_r = 2
 
 assert(min_k < min_n)
 assert(max_k < max_n)
@@ -31,7 +32,7 @@ hf = Font(name = 'Calibri', bold = True)
 while True:
     n = lc.randint(min_n, max_n)
     k = lc.randint(min_k, max_k)
-    if k < n:
+    if k < n and (n - k) >= min_r:
         break
 
 r = n - k
@@ -45,7 +46,7 @@ except:
 print(f'Подождите идет подбор порождающей матрицы G с кодовым \
 расстоянием не ниже {d_low_bound}...')
 G = lc.gen_matrix(n, k, d_low_bound)
-Gsh = lc.shuffle_matrix(G, n, True, [])[0]
+Gsh, *_ = lc.shuffle_matrix(G, n, True, [])
 
 print('Порождающая матрица G в систематической форме')
 pp(G)
@@ -53,9 +54,7 @@ pp(G)
 print('Матрица G после тасовки')
 pp(Gsh)
 
-CW = lc.gen_code(Gsh)
-C = CW[0]
-d = CW[2]
+C, _, d = lc.gen_code(Gsh)
 s = choice(C)
 
 print('Кодовое расстояние dк')

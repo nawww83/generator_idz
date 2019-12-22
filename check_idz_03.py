@@ -31,6 +31,7 @@ min_n = 6
 max_n = 15
 min_k = 3
 max_k = 5
+min_r = 2
 
 assert(min_k < min_n)
 assert(max_k < max_n)
@@ -54,11 +55,9 @@ v = G.pop()
 print('Принятый кодовый вектор')
 pp(v)
 
-p = lc.check_matrix(G)
-k = p[0]
-n = p[1]
+k, n, ok = lc.check_matrix(G)
 r = n - k
-assert(p[2])
+assert(ok)
 
 print('Порождающая матрица кода')
 pp(G)
@@ -75,16 +74,14 @@ for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - min
     elif n_row == 1 and isinstance(row[0], int):
         parameters.append(row[0])
 
-p = lc.check_matrix(H_)
-r = p[0]
-n = p[1]
+r, n, ok = lc.check_matrix(H_)
 k = n - r
-assert(p[2])
+assert(ok)
 
 assert((len(parameters) == 1))
 
 d_ = parameters[0]
-d = lc.gen_code(G)[2]
+*_, d = lc.gen_code(G)
 print('Подождите идет подбор матрицы H...')
 H = lc.get_check_matrix(G)
 d_alter = lc.get_code_distance(H)

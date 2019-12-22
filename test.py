@@ -34,7 +34,7 @@ while True:
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'Shuffling G matrix...', flush = True)
     t0 = time.perf_counter()
-    Gsh = lc.shuffle_matrix(G, n, True, [])[0]
+    Gsh, *_ = lc.shuffle_matrix(G, n, True, [])
     t1 = time.perf_counter()
     # pp(f'Generator matrix: {Gsh}')
     print(f'Elapsed {t1 - t0} s', flush = True)

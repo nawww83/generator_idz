@@ -67,11 +67,9 @@ def hamming_weight(v):
 # Возвращает произведение вектора на матрицу
 def mult_v(v, M):
     k = len(v)
-    params = check_matrix(M)
-    k_ = params[0]
-    n = params[1]
+    k_, n, ok = check_matrix(M)
     assert(k == k_)
-    assert(params[2] == True)
+    assert(ok)
     result = [0] * n
     for r in range(k):
         if v[r] == 1:
@@ -80,15 +78,11 @@ def mult_v(v, M):
 
 # Возвращает произведение двух матриц
 def mult_M(A, B):
-    paramsA = check_matrix(A)
-    paramsB = check_matrix(B)
-    kA = paramsA[0]
-    nA = paramsA[1]
-    kB = paramsB[0]
-    nB = paramsB[1]
+    kA, nA, okA = check_matrix(A)
+    kB, nB, okB = check_matrix(B)
     assert(nA == kB)
-    assert(paramsA[2] == True)
-    assert(paramsB[2] == True)
+    assert(okA)
+    assert(okB)
     result = [[0] * nB for _ in range(kA)]
     Bt = transpose(B)
     for r in range(kA):
@@ -173,10 +167,8 @@ def exists_linear_dependence(M, m, rows):
 # Последовательно начиная с m = 1 ищет первую попавшуюся группу из m линейно
 # зависимых столбцов матрицы H. При этом кодовое расстояние равно d = m.
 def get_code_distance(H):
-    params = check_matrix(H)
-    r = params[0]
-    n = params[1]
-    assert(params[2])
+    r, n, ok = check_matrix(H)
+    assert(ok)
     Ht = transpose(H)
     d = 1
     while True:
@@ -237,10 +229,8 @@ def shuffle_matrix(M, n_sh, with_columns, exclude_rows):
 # Возвращает матрицу, полученную путем перестановки столбцов матрицы M по 
 # правилу p, в котором указаны индексы куда переставлять столбцы
 def permute_columns(M, p):
-    params = check_matrix(M)
-    rows = params[0]
-    cols = params[1]
-    assert(params[2])
+    rows, cols, ok = check_matrix(M)
+    assert(ok)
     assert(len(p) == cols)
     resultT = transpose(M)
     resultT_tmp = deepcopy(resultT)
@@ -287,7 +277,7 @@ def reduce_to_basis(M, rows, cols):
     # Перетасовываем матрицу M до тех пор, пока не получим матрицу, содержащую
     # rows уникальных единичных столбцов - базис
     while not iloc:
-        Msh = shuffle_matrix(M, cols, False)[0]
+        Msh, *_ = shuffle_matrix(M, cols, False)
         iloc = find_unity_columns(Msh)
         iloc = tune_uniq_unity_columns(iloc, Msh)
     assert(len(iloc) == rows)
@@ -340,7 +330,7 @@ def reduce_to_basis_2(M, rows, cols):
         # нельзя "портить" уже сформированные единичные базисные столбцы. 
         # Указываются индексы строк, в которых стоит единица соответствующего 
         # единичного столбца.
-        Msh = shuffle_matrix(Msh, 1, False, rows_locked)[0]
+        Msh, *_ = shuffle_matrix(Msh, 1, False, rows_locked)
     # Определяем индексы остальных столбцов - небазисных
     niloc = list(set(range(cols)) - set(iloc_basis))
     niloc.sort() # Сортируем
@@ -363,16 +353,11 @@ def get_random_square_submatrix(M, rows, cols):
 
 # Возвращает проверочную матрицу H линейного кода по его порождающей матрице G
 def get_check_matrix(G):
-    params = check_matrix(G)
-    k = params[0]
-    n = params[1]
-    assert(params[2])
+    k, n, ok = check_matrix(G)
+    assert(ok)
     pi = list(range(n)) # Вектор перестановок
     # BS = reduce_to_basis(G, k, n)
-    BS = reduce_to_basis_2(G, k, n)
-    Gsh = BS[0]
-    iloc = BS[1]
-    niloc = BS[2]
+    Gsh, iloc, niloc = reduce_to_basis_2(G, k, n)
     Gsht = transpose(Gsh)
     for c in iloc:
         i = Gsht[c].index(1) # Позиция единицы в столбце
@@ -395,12 +380,10 @@ def get_check_matrix(G):
 # Здесь c - вектор синдрома c = eH^T, [e] - набор соответствующих векторов 
 # ошибок
 def get_adjacent_classes(H):
-    params = check_matrix(H)
-    r = params[0]
-    n = params[1]
-    assert(params[2])
+    r, n, ok = check_matrix(H)
+    assert(ok)
     ac = {}
-    it = product([0,1], repeat = r)
+    it = product([0, 1], repeat = r)
     for c in it:
         address = tuple(c)
         ac[address] = []
@@ -435,10 +418,9 @@ def correct(v, H, ac):
 # Возвращает вектор w, являющийся решением системы линейных уравнений v = w * M
 # Матрица M должна быть квадратной
 def solve_le(v, M):
-    params = check_matrix(M)
-    rows = params[0]
-    assert(params[2])
-    assert(rows == params[1])
+    rows, cols, ok = check_matrix(M)
+    assert(ok)
+    assert(rows == cols)
     Msh = transpose(M)
     rows_locked = [] # Индексы строк для блокировки
     while True:
@@ -463,10 +445,8 @@ def solve_le(v, M):
 # Возвращает информационный вектор a по кодовому вектору s и порождающей 
 # матрице G
 def decode(s, G):
-    params = check_matrix(G)
-    k = params[0]
-    n = params[1]
-    assert(params[2])
+    k, n, ok = check_matrix(G)
+    assert(ok)
     iloc_basis = find_basis_candidates(G, k, n)
     GT = transpose(G)
     s_cut = []
@@ -477,5 +457,3 @@ def decode(s, G):
     G_cut = transpose(GT_cut)
     a = solve_le(s_cut, G_cut)
     return a
-    
-    

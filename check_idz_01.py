@@ -30,6 +30,7 @@ min_n = 6
 max_n = 15
 min_k = 3
 max_k = 5
+min_r = 2
 
 assert(min_k < min_n)
 assert(max_k < max_n)
@@ -53,25 +54,16 @@ for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 16 + max_k, valu
 print('Порождающая матрица кода')
 pp(G)
 
-p = lc.check_matrix(G)
-k = p[0]
-n = p[1]
+k, n, ok = lc.check_matrix(G)
 r = n - k
 
-assert((len(parameters) == 6) and p[2])
+assert((len(parameters) == 6) and ok)
 
-n_ = parameters[0]
-k_ = parameters[1]
-r_ = parameters[2]
-d_ = parameters[3]
-qo_ = parameters[4]
-qi_ = parameters[5]
+n_, k_, r_, d_, qo_, qi_ = parameters
 
 CS = lc.gen_code(G)
 
-C = CS[0]
-Wsp = CS[1]
-d = CS[2]
+C, Wsp, d = CS
 qo = d - 1
 qi = (d - 1) // 2
 
