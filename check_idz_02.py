@@ -78,7 +78,7 @@ d_ = parameters[0]
 *_, d = lc.gen_code(G)
 print('Подождите идет подбор матрицы H...')
 H = lc.get_check_matrix(G)
-d_alter = lc.get_code_distance(H)
+d_alter = lc.get_code_distance(H, False)
 
 print('Правильные ответы:')
 pp(f'd = {d}, альтернативный метод d = {d_alter}')

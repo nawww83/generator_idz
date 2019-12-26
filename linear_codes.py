@@ -105,27 +105,31 @@ def get_error_vector(n, p):
 def gen_matrix(n, k, d_low):
     assert(n > 1)
     assert(k < n)
-    I = identity(k)
+    Ik = identity(k)
     r = n - k
+    assert(d_low <= r + 1)
+    Ir = identity(r)
+    G = []
+    d = 1
     while True:
-        G = []
         Q = []
         w_min = r
         for _ in range(k):
-            q = get_rand_bits(r)
-            w = hamming_weight(q)
+            w = 0
+            while w + 1 < d_low:
+                q = get_rand_bits(r)
+                w = hamming_weight(q)
             w_min = min(w, w_min)
             Q.append(q)
         d_high = w_min + 1 # Оценка кодового расстояния сверху
-        if d_high < d_low:
-            continue
-        G = augment(I, Q)
-        d = gen_code(G)[2] # Вычисление кодового расстояния
+        H = augment(transpose(Q), Ir)
+        d = get_code_distance(H, True)
         if d < d_low:
             continue
         else:
+            G = augment(Ik, Q)
             break
-    return G
+    return G, d
 
 # По порождающей матрице G возвращает множество кодовых векторов, а также
 # спектр кода и кодовое расстояние
@@ -168,7 +172,9 @@ def exists_linear_dependence(M, m, rows):
 # Возвращает кодовое расстояние (n, k)-кода по его проверочной матрице
 # Последовательно начиная с m = 1 ищет первую попавшуюся группу из m линейно
 # зависимых столбцов матрицы H. При этом кодовое расстояние равно d = m.
-def get_code_distance(H):
+# Если silence = True, то текущая оценка кодового расстояния на экран 
+# не выводится.
+def get_code_distance(H, silence):
     r, n, ok = check_matrix(H)
     assert(ok)
     Ht = transpose(H)
@@ -179,7 +185,8 @@ def get_code_distance(H):
             break
         else:
             d += 1
-            print(f'... at distance {d} estimation...', flush = True)
+            if not silence:
+                print(f'... at distance {d} estimation...', flush = True)
     return d
 
 # Возвращает перемешанную матрицу, а также список соответствующих пар 
