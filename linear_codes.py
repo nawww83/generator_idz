@@ -466,12 +466,10 @@ def resolve_hamming_constrain(n, k):
     assert(k < n)
     r = n - k
     N_cyndromes = np.power(2., r)
-    print(N_cyndromes)
     qi = r // 4
     N_errors = 0
     for i in range(qi + 1):
         N_errors += comb(n, i)
-    print(N_errors)
     overhead = (N_errors > N_cyndromes)
     step = False
     while not step:
@@ -483,11 +481,9 @@ def resolve_hamming_constrain(n, k):
             N_errors += comb(n, qi)
         step = overhead ^ (N_errors > N_cyndromes)
         overhead = (N_errors > N_cyndromes)
-        print(N_errors)
     if overhead:
         N_errors -= comb(n, qi)
         qi -= 1
-    print(N_errors)
     return qi
 
 # Возвращает вероятность q-кратной ошибки в слове из n битов, если вероятность
