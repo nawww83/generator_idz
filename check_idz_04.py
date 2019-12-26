@@ -73,6 +73,8 @@ qi_, p_err_, p_bit_ = params
 assert(qi_ > 0)
 assert(qi_ <= r_ // 2)
 
+print(f'Параметры (n, k)-кода: ({n_}, {k_})')
+
 qi = lc.resolve_hamming_constrain(n_, k_)
 
 print(f'Введенная кратность исправляемой ошибки qi = {qi_}')
