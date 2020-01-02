@@ -493,8 +493,22 @@ def resolve_hamming_constrain(n, k):
         qi -= 1
     return qi
 
-# Возвращает вероятность q-кратной ошибки в слове из n битов, если вероятность
-# ошибки в одном бите равна p. Ошибки независимые (BSC-канал).
+# Возвращает вероятность q-кратной ошибки в слове из n битов при его передаче
+# через BSC-канал, при этом вероятность ошибки в одном бите равна p.
+# BSC - Binary Symmetric Channel - Двоичный симметричный канал с 
+# независимыми ошибками.
 def probability_bsc(q, n, p):
     return comb(n, q) * np.power(float(p), q) * np.power(1. - p, n - q)
+
+# Возвращает вероятность того, что при передаче слова из n битов через 
+# BSC-канал произойдет ошибка кратности выше q_low. Также возвращает 
+# вероятность противоположного события.
+# BSC - Binary Symmetric Channel - Двоичный симметричный канал с 
+# независимыми ошибками.
+def probability_bsc_more(q_low, n, p):
+    tmp = 0.
+    for q in range(q_low + 1, n + 1):
+        tmp += probability_bsc(q, n, p)
+    p_err, p_compl = tmp, 1 - tmp
+    return p_err, p_compl
 

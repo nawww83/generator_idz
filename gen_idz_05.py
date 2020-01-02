@@ -26,11 +26,15 @@ modulations = {0: 'АМн когер.', 1: 'АМн некогер.', 2: 'ЧМн 
 6: 'ФМн-4/КАМ-4 когер.', 7: 'ФМн-4/КАМ-4 част. когер', 8: 'ФМн-8 когер.'}
 
 # Ограничения на параметры (n, k) кода
-min_n = 31
-max_n = 1023
+n_min = 31
+n_max = 255
 # Ограничение на вероятность битовой ошибки на выходе декодера
-p_min = 1.e-08
+p_min = 1.e-09
 p_max = 1.e-02
+
+# Ограничение на кратность исправления
+q_min = 1
+q_max = 7
 
 hf = Font(name = 'Calibri', bold = True)
 
@@ -39,10 +43,20 @@ m = round( random() * (m_max - m_min) + m_min )
 
 print(f'Вид модуляции: {m}')
 
-# Генерация вероятности ошибки в канале
+# Длина кода
+n = round( random() * (n_max - n_min) + n_min )
+
+print(f'Длина кода: {n}')
+
+# Вероятность ошибки
 p = random() * (p_max - p_min) + p_min
 
-print(f'Вероятность ошибки в канале: {p}')
+print(f'Вероятность битовой ошибки P бит. дек.: {p}')
+
+# Кратность исправления
+q = round( random() * (q_max - q_min) + q_min )
+
+print(f'Кратность исправления: {q}')
 
 wb = Workbook()
 ws = wb.active
@@ -50,15 +64,19 @@ ws.title = 'Main'
 
 ws.append(['Вид модуляции m:'])
 ws.append([m])
+ws.append(['Длина кода n:'])
+ws.append([n])
 ws.append(['Требуемая вероятность битовой ошибки P бит. дек.:'])
 ws.append([p])
+ws.append(['Кратность исправления qи:'])
+ws.append([q])
 
 wsC = wb.create_sheet('Check')
 wsC.append(['Введите ответы:'])
 wsC.cell(row = wsC.max_row, column = 1).font = hf
 wsC.append(['Скорость кодирования R:'])
 wsC.append([0.])
-wsC.append(['Требуемое отношение сигнал-шум на один бит, Eb/N0, дБ'])
+wsC.append(['Отношение сигнал-шум на один бит, Eb/N0, дБ'])
 wsC.append([0.])
 wsC.append(['Внимание! Ответы давать с точностью не хуже 1%'])
 wsC.cell(row = wsC.max_row, column = 1).font = hf

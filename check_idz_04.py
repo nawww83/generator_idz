@@ -74,28 +74,21 @@ assert(qi_ > 0)
 assert(qi_ <= r_ // 2)
 
 print(f'Параметры (n, k)-кода: ({n_}, {k_})')
+print(f'Число проверочных битов: {r_}')
 
 qi = lc.resolve_hamming_constrain(n_, k_)
 
-print(f'Введенная кратность исправляемой ошибки qi = {qi_}')
-print(f'Правильный ответ qi = {qi}')
+print(f'Введенная кратность исправляемой ошибки: qi = {qi_}')
+print(f'Правильный ответ: qi = {qi}')
 
 assert(qi_ == qi)
 
-diff = n_ - qi_
-p_err = 0.
-if diff > qi_:
-    for q in range(qi_ + 1):
-        p_err += lc.probability_bsc(q, n_, p_)
-    p_err = 1. - p_err
-else:
-    for q in range(qi_ + 1, n_ + 1):
-        p_err += lc.probability_bsc(q, n_, p_)
+p_err, _ = lc.probability_bsc_more(qi_, n_, p_)
 
 assert(p_err > 0.)
 
-print(f'Введенная вероятность ошибки p_err = {p_err_}')
-print(f'Правильный ответ p_err = {p_err}')
+print(f'Введенная вероятность ошибки: p_err = {p_err_}')
+print(f'Правильный ответ: p_err = {p_err}')
 
 rel_error = np.abs(p_err - p_err_) / p_err
 assert(rel_error < 0.01)
@@ -103,8 +96,8 @@ assert(rel_error < 0.01)
 d = 2 * qi + 1
 p_bit = p_err * d / n_
 
-print(f'Введенная вероятность битовой ошибки p_bit = {p_bit_}')
-print(f'Правильный ответ p_bit = {p_bit}')
+print(f'Введенная вероятность битовой ошибки: p_bit = {p_bit_}')
+print(f'Правильный ответ: p_bit = {p_bit}')
 
 rel_error = np.abs(p_bit - p_bit_) / p_bit
 assert(rel_error < 0.01)
