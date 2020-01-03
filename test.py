@@ -6,7 +6,7 @@ from random import choice
 
 # Ограничения на параметры (n, k) кода
 min_n = 3
-max_n = 17
+max_n = 18
 min_k = 1
 max_k = 15
 min_r = 2

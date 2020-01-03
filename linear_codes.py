@@ -109,26 +109,31 @@ def gen_matrix(n, k, d_low):
     r = n - k
     assert(d_low <= r + 1)
     Ir = identity(r)
-    G = []
-    d = 1
-    while True:
-        Q = []
-        w_min = r
-        for _ in range(k):
-            w = 0
-            while w + 1 < d_low:
-                q = get_rand_bits(r)
-                w = hamming_weight(q)
-            w_min = min(w, w_min)
-            Q.append(q)
-        d_high = w_min + 1 # Оценка кодового расстояния сверху
-        H = augment(transpose(Q), Ir)
-        d = get_code_distance(H, True)
-        if d < d_low:
-            continue
-        else:
-            G = augment(Ik, Q)
-            break
+    Q = []
+    lq = len(Q)
+    max_pops = k * (2 ** r)
+    pops = 0
+    while len(Q) < k:
+        w = -1
+        while w + 1 < d_low:
+            q = get_rand_bits(r)
+            w = hamming_weight(q)
+        Q.append(q)
+        lq = len(Q)
+        failed = False
+        for i in range(1, min(d_low - 1, lq) + 1):
+            failed = exists_linear_dependence_level_l(Q, i, d_low - 1 - i, lq)
+            if failed:
+                break
+        if failed:
+            Q.pop()
+            pops += 1
+            if pops > max_pops:
+                pops = 0
+                Q = []
+    H = augment(transpose(Q), Ir)
+    d = get_code_distance(H, True)
+    G = augment(Ik, Q)
     return G, d
 
 # По порождающей матрице G возвращает множество кодовых векторов, а также
@@ -165,6 +170,22 @@ def exists_linear_dependence(M, m, rows):
             w[i] = 1
         l = mult_v(w, M) # Линейная комбинация строк с весами w
         result = (sum(l) == 0)
+        if result:
+            break
+    return result
+
+# Возвращает True, если в матрице M найдется ровно m строк, линейная комбинация
+# которых дает строку с весом не выше lev.
+def exists_linear_dependence_level_l(M, m, lev, rows):
+    assert(m <= rows)
+    result = False
+    it = combinations(range(rows), m)
+    for index in it:
+        w = [0] * rows
+        for i in index:
+            w[i] = 1
+        l = mult_v(w, M) # Линейная комбинация строк с весами w
+        result = (sum(l) <= lev)
         if result:
             break
     return result
@@ -503,12 +524,17 @@ def probability_bsc(q, n, p):
 # Возвращает вероятность того, что при передаче слова из n битов через 
 # BSC-канал произойдет ошибка кратности выше q_low. Также возвращает 
 # вероятность противоположного события.
-# BSC - Binary Symmetric Channel - Двоичный симметричный канал с 
-# независимыми ошибками.
+# BSC - Binary Symmetric Channel - Двоичный симметричный канал с независимыми
+# ошибками.
 def probability_bsc_more(q_low, n, p):
     tmp = 0.
-    for q in range(q_low + 1, n + 1):
-        tmp += probability_bsc(q, n, p)
-    p_err, p_compl = tmp, 1 - tmp
+    if n * p > q_low:
+        for q in range(0, q_low + 1):
+            tmp += probability_bsc(q, n, p)
+        p_err, p_compl = 1. - tmp, tmp
+    else:
+        for q in range(q_low + 1, n + 1):
+            tmp += probability_bsc(q, n, p)
+        p_err, p_compl = tmp, 1. - tmp
     return p_err, p_compl
 
