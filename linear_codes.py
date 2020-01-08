@@ -140,16 +140,13 @@ def gen_matrix(n, k, d_low):
 # спектр кода и кодовое расстояние
 def gen_code(G):
     k = len(G)
-    it = product([0,1], repeat = k)
+    it = product([0, 1], repeat = k)
     code = []
     ws = {}
     for a in it:
         s = mult_v(a, G)
         w = sum(s)
-        if w in ws:
-            ws[w] += 1
-        else:
-            ws[w] = 1
+        ws[w] = ws.get(w, 0) + 1
         code.append(s)
     ws = dict(sorted(ws.items()))
     ws_ = deepcopy(ws)
@@ -165,9 +162,7 @@ def exists_linear_dependence(M, m, rows):
     result = False
     it = combinations(range(rows), m)
     for index in it:
-        w = [0] * rows
-        for i in index:
-            w[i] = 1
+        w = [int(i in index) for i in range(rows)]
         l = mult_v(w, M) # Линейная комбинация строк с весами w
         result = (sum(l) == 0)
         if result:
@@ -181,9 +176,7 @@ def exists_linear_dependence_level_l(M, m, lev, rows):
     result = False
     it = combinations(range(rows), m)
     for index in it:
-        w = [0] * rows
-        for i in index:
-            w[i] = 1
+        w = [int(i in index) for i in range(rows)]
         l = mult_v(w, M) # Линейная комбинация строк с весами w
         result = (sum(l) <= lev)
         if result:
@@ -321,13 +314,15 @@ def find_basis_candidates(M, rows, cols):
     assert(rows <= cols)
     MT = transpose(M)
     nonBasis = True
+    eld = exists_linear_dependence
+    grss = get_random_square_submatrix
     iloc_basis = set() # Индексы столбцов M под базис
     while nonBasis: # Пока не найден базис
-        Msq, iloc_basis = get_random_square_submatrix(MT, rows, cols)
+        Msq, iloc_basis = grss(MT, rows, cols)
         ir = 1
         _nb = True
         while ir <= rows:
-            _nb = exists_linear_dependence(Msq, ir, rows)
+            _nb = eld(Msq, ir, rows)
             if _nb or ir == rows:
                 break
             ir += 1
@@ -340,21 +335,24 @@ def find_basis_candidates(M, rows, cols):
 # (rows, cols) - размеры матрицы M
 def reduce_to_basis_2(M, rows, cols):
     # Индексы, закрепленные под базис
-    iloc_basis = find_basis_candidates(M, rows, cols)
     print(f'... search basis ...', flush = True)
+    iloc_basis = find_basis_candidates(M, rows, cols)
     print(f'    basis is found: {iloc_basis}', flush = True)
     Msh = M
     rows_locked = [] # Индексы строк для блокировки
     locked = len(rows_locked)
+    fuc = find_unity_columns
+    fuuc = filter_uniq_unity_columns
+    shm = shuffle_matrix
     while True:
         # Ищем все единичные столбцы
-        where_unity = set(find_unity_columns(Msh))
+        where_unity = set(fuc(Msh))
         # Отбираем те индексы, которые пересекаются с закрепленными под базис.
         # Сортируем по возрастанию.
         active_unity = sorted(list(iloc_basis.intersection(where_unity)))
         # Отфильтровываем возможные повторяющиеся столбцы и одновременно
         # определяем позиции единиц
-        uniq_cols = filter_uniq_unity_columns(active_unity, Msh)
+        uniq_cols = fuuc(active_unity, Msh)
         # Индексы строк для блокировки уже сформированных единичных столбцов
         rows_locked = uniq_cols.keys()
         tmp = len(rows_locked)
@@ -367,7 +365,7 @@ def reduce_to_basis_2(M, rows, cols):
         # нельзя "портить" уже сформированные единичные базисные столбцы. 
         # Указываются индексы строк, в которых стоит единица соответствующего 
         # единичного столбца.
-        Msh, *_ = shuffle_matrix(Msh, 1, False, rows_locked)
+        Msh, *_ = shm(Msh, 1, False, rows_locked)
     # Определяем индексы остальных столбцов - небазисных
     niloc = list(set(range(cols)) - set(iloc_basis))
     niloc.sort() # Сортируем
