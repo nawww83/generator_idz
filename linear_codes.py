@@ -341,8 +341,11 @@ def find_basis_candidates(M, rows, cols):
 def reduce_to_basis_2(M, rows, cols):
     # Индексы, закрепленные под базис
     iloc_basis = find_basis_candidates(M, rows, cols)
+    print(f'... search basis ...', flush = True)
+    print(f'    basis is found: {iloc_basis}', flush = True)
     Msh = M
     rows_locked = [] # Индексы строк для блокировки
+    locked = len(rows_locked)
     while True:
         # Ищем все единичные столбцы
         where_unity = set(find_unity_columns(Msh))
@@ -354,7 +357,11 @@ def reduce_to_basis_2(M, rows, cols):
         uniq_cols = filter_uniq_unity_columns(active_unity, Msh)
         # Индексы строк для блокировки уже сформированных единичных столбцов
         rows_locked = uniq_cols.keys()
-        if len(rows_locked) == rows: # Все rows столбцов - единичные и разные
+        tmp = len(rows_locked)
+        if tmp > locked:
+            locked = tmp
+            print(f'... locked {locked} columns from {rows}...', flush = True)
+        if locked == rows: # Все rows столбцов - единичные и разные
             break
         # Тасуем матрицу путем xor двух случайных строк с учетом того, что
         # нельзя "портить" уже сформированные единичные базисные столбцы. 

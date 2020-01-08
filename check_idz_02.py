@@ -45,15 +45,15 @@ G = []
 for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 2 + max_k, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     g_Ok = is_bits_vector(row)
-    n = len(row)
-    if g_Ok and n >= min_n and n <= max_n:
+    nr = len(row)
+    if g_Ok and nr >= min_n and nr <= max_n:
         G.append(row) # Читаем матрицу кода
 
 k, n, ok = lc.check_matrix(G)
 r = n - k
 assert(ok)
 
-print('Порождающая матрица кода')
+print(f'Порождающая матрица ({n}, {k})-кода')
 pp(G)
 
 parameters = []
@@ -62,44 +62,49 @@ wsC = wb['Check']
 for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - min_k, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     h_Ok = is_bits_vector(row)
-    n = len(row)
-    if h_Ok and n >= min_n and n <= max_n:
+    nr = len(row)
+    if h_Ok and nr >= min_n and nr <= max_n:
         H_.append(row) # Читаем матрицу кода
-    elif n == 1 and isinstance(row[0], int):
+    elif nr == 1 and isinstance(row[0], int):
         parameters.append(row[0])
 
-r, n, ok = lc.check_matrix(H_)
-k = n - r
+r_, n_, ok = lc.check_matrix(H_)
+k_ = n_ - r_
+assert(r_ == r)
+assert(n_ == n)
 assert(ok)
 
 assert((len(parameters) == 1))
 
 d_ = parameters[0]
+print(f'Идет вычисление кодового расстояния d...', flush = True)
 *_, d = lc.gen_code(G)
-print('Подождите идет подбор матрицы H...')
+print(f'd = {d}', flush = True)
+print(f'Идет подбор проверочной матрицы H...', flush = True)
 H = lc.get_check_matrix(G)
+print(f'Идет вычисление кодового расстояния d по H...', flush = True)
 d_alter = lc.get_code_distance(H, False)
 
-print('Правильные ответы:')
-pp(f'd = {d}, альтернативный метод d = {d_alter}')
+print(f'Правильные ответы:')
+print(f'd = {d}, альтернативный метод d = {d_alter}')
 
 assert(d == d_alter)
 
-print('Введенные ответы:')
+print(f'Введенные ответы:')
 pp(f'd = {d_}')
 
 assert(d_ == d)
 
-print('Правильная проверочная матрица кода')
+print(f'Правильная проверочная матрица кода')
 pp(H)
 
-print('Введенная проверочная матрица кода')
+print(f'Введенная проверочная матрица кода')
 pp(H_)
 
 zero = sum(map(sum, lc.mult_M(G, lc.transpose(H))))
 zero_ = sum(map(sum, lc.mult_M(G, lc.transpose(H_))))
 
-print('Контроль правильности проверочной матрицы')
+print(f'Контроль правильности проверочной матрицы')
 ok = (zero == zero_ == 0)
 pp(ok)
 assert(ok)
