@@ -81,7 +81,8 @@ assert(ok)
 assert((len(parameters) == 1))
 
 d_ = parameters[0]
-*_, d = lc.gen_code(G)
+Wsp = lc.gen_spectrum(G)
+d = lc.spectrum_to_code_distance(Wsp)
 print('Подождите идет подбор матрицы H...')
 H = lc.get_check_matrix(G)
 d_alter = lc.get_code_distance(H, False)
@@ -134,8 +135,12 @@ k_ = len(a_)
 assert(n_ == n)
 assert(k_ == k)
 
-ac = lc.get_adjacent_classes(H)
-s_est, e, c = lc.correct(v, H, ac)
+# ac = lc.get_adjacent_classes(H)
+ac = lc.get_min_adjacent_classes(H)
+#s_est, e, c = lc.correct(v, H, ac)
+c = lc.mult_v(v, lc.transpose(H))
+e = ac[tuple(c)]
+s_est = lc.xor(v, e)
 
 print('Скорректированный кодовый вектор')
 pp(s_est)
@@ -143,8 +148,8 @@ pp(s_est)
 print('Синдром')
 pp(c)
 
-print('Класс смежности синдрома')
-pp(ac[tuple(c)])
+print('Вектор ошибки минимальной кратности')
+pp(e)
 
 print('Введенный скорректированный кодовый вектор')
 pp(s_)

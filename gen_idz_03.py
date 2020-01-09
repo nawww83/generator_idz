@@ -54,8 +54,8 @@ pp(G)
 print('Матрица G после тасовки')
 pp(Gsh)
 
-C, *_ = lc.gen_code(Gsh)
-s = choice(C)
+a = lc.get_rand_bits(k)
+s = lc.mult_v(a, Gsh)
 
 print('Кодовое расстояние dк')
 pp(d)

@@ -51,17 +51,13 @@ pp(G)
 print('Матрица G после тасовки')
 pp(Gsh)
 
-print('Код C1 по систематической матрице G')
-C = lc.gen_code(G)
-pp(C[0])
-print('Спектр кода Wsp(C1)')
-pp(C[1])
+Wsp = lc.gen_spectrum(G)
+print('Спектр кода Wsp по исходной матрице G (систематической)')
+pp(Wsp)
 
-print('Код C2 по тасованной матрице G')
-Csh = lc.gen_code(Gsh)
-pp(Csh[0])
-print('Спектр кода Wsp(C2)')
-pp(Csh[1])
+Wspsh = lc.gen_spectrum(Gsh)
+print('Спектр кода Wsp по тасованной матрице G')
+pp(Wspsh)
 
 wb = Workbook()
 ws = wb.active
@@ -87,18 +83,10 @@ ws.append([0])
 ws.append(['Кратность гарантированного исправления qи:'])
 ws.append([0])
 
-code_name = 'Code'
 spectr_name = 'CodeSpectrum'
 
-ws.append([f'Не забудьте заполнить листы {code_name} и {spectr_name}!'])
+ws.append([f'Не забудьте заполнить лист {spectr_name}!'])
 ws.cell(row = ws.max_row, column = 1).font = hf
-
-wsC = wb.create_sheet(code_name)
-wsC['A1'].font = hf
-wsC['A1'] = 'Введите кодовые слова кода C в произвольном порядке'
-
-for _ in range(2**k):
-    wsC.append(lc.get_rand_bits(n))
 
 wsWC = wb.create_sheet(spectr_name)
 wsWC['A1'].font = hf
@@ -109,3 +97,4 @@ wsWC.append(['Количество весов Nw:'])
 wsWC.append([0] * (n + 1))
 
 wb.save(f'{student}_{task_code}_{group}.xlsx')
+

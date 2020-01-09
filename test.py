@@ -59,7 +59,8 @@ while True:
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'Generation code and calc spectrum and distance...', flush = True)
     t0 = time.perf_counter()
-    Code, Wsp, dist = lc.gen_code(Gsh)
+    Wsp = lc.gen_spectrum(Gsh)
+    dist = lc.spectrum_to_code_distance(Wsp)
     t1 = time.perf_counter()
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'd_max = {d_max}, d_low = {d_low}, d = {d}, d_dist = {dist}', flush = True)
@@ -67,8 +68,8 @@ while True:
     assert(d >= d_low)
     assert(Wsp[0] == 1)
     assert(sum(Wsp.values()) == 2**k)
-    assert(len(Code) == 2**k)
-    s = choice(Code)
+    a = lc.get_rand_bits(k)
+    s = lc.mult_v(a, Gsh)
     print(f'Transmitted code vector s = {s}')
     qi = (d - 1) // 2 # Целевая кратность ошибки - кратность исправления
     p = 1. * qi / n # Средняя кратность случайной величины q = np

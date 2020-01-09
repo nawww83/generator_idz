@@ -2,6 +2,7 @@
 # Для хранения матриц и векторов использует список list() из чисел 0 и 1
 from random import randint
 from random import choice
+from random import choices
 from random import random
 import operator
 from functools import reduce
@@ -10,7 +11,7 @@ from itertools import combinations
 from copy import deepcopy
 from scipy.special import comb
 import numpy as np
- 
+
 # Возвращает кортеж в виде (размеры матрицы, флаг проверки)
 # Проверяет вложенный список на соответствие матрице размером (rows, cols)
 def check_matrix(M):
@@ -111,12 +112,13 @@ def gen_matrix(n, k, d_low):
     Ir = identity(r)
     Q = []
     lq = len(Q)
-    max_pops = k * (2 ** r)
+    max_pops = 4 * (k * (2 ** r))
     pops = 0
     while len(Q) < k:
         w = -1
-        while w + 1 < d_low:
-            q = get_rand_bits(r)
+        while w < d_low - 1:
+            #q = get_rand_bits(r)
+            q = choices([0, 1], weights = [r - d_low + 1, d_low - 1], k = r)
             w = hamming_weight(q)
         Q.append(q)
         lq = len(Q)
@@ -129,32 +131,57 @@ def gen_matrix(n, k, d_low):
             Q.pop()
             pops += 1
             if pops > max_pops:
+                print(f'... failed, rows = {lq}, pops = {pops}', flush = True)
                 pops = 0
                 Q = []
+        else:
+            if lq == k - 1:
+                it = product([0, 1], repeat = r)
+                for q in it:
+                    q = list(q)
+                    w = hamming_weight(q)
+                    if w < d_low - 1:
+                        continue
+                    Q.append(q)
+                    lq = len(Q)
+                    failed = False
+                    for i in range(1, min(d_low - 1, lq) + 1):
+                        failed = exists_linear_dependence_level_l(Q, i, d_low - 1 - i, lq)
+                        if failed:
+                            break
+                    if failed:
+                        Q.pop()
+                    else:
+                        break
+                if len(Q) < k:
+                    pops = 0
+                    Q = []
+                    print(f'... failed {k}th (last) row searching', flush = True)
+    print(f'finished, formed {len(Q)} rows', flush = True)
     H = augment(transpose(Q), Ir)
     d = get_code_distance(H, True)
     G = augment(Ik, Q)
     return G, d
 
-# По порождающей матрице G возвращает множество кодовых векторов, а также
-# спектр кода и кодовое расстояние
-def gen_code(G):
+# По порождающей матрице G возвращает спектр кода
+def gen_spectrum(G):
     k = len(G)
     it = product([0, 1], repeat = k)
-    code = []
     ws = {}
     for a in it:
-        s = mult_v(a, G)
+        s = mult_v(list(a), G)
         w = sum(s)
         ws[w] = ws.get(w, 0) + 1
-        code.append(s)
     ws = dict(sorted(ws.items()))
+    return ws
+
+# Возвращает кодовое (минимальное) расстояние d по спектру кода ws.
+# Спектр ws = {w: v} не должен содержать нулевых значений v.
+def spectrum_to_code_distance(ws):
     ws_ = deepcopy(ws)
     del ws_[0]
     d = list(ws_.keys())
-    v = list(ws_.values())
-    dmin = min(d)
-    return (code, ws, dmin)
+    return min(d)
 
 # Возвращает True, если в матрице M найдется ровно m линейно зависимых строк
 def exists_linear_dependence(M, m, rows):
@@ -423,11 +450,33 @@ def get_adjacent_classes(H):
         address = tuple(c)
         ac[address] = []
     HT = transpose(H)
-    it = product([0,1], repeat = n)
+    it = product([0, 1], repeat = n)
     for e in it:
+        e = list(e)
         c = mult_v(e, HT)
         address = tuple(c)
         ac[address].append(e)
+    return ac
+
+# Возвращает минимальный класс смежности {c: e} по проверочной матрице H кода.
+# Здесь c - вектор синдрома c = eH^T, e - соответствующий вектор ошибки 
+# минимальной кратности
+def get_min_adjacent_classes(H):
+    r, n, ok = check_matrix(H)
+    assert(ok)
+    ac = {}
+    HT = transpose(H)
+    ones = [1] * n
+    it = product([0, 1], repeat = n)
+    for e in it:
+        e = list(e)
+        c = mult_v(e, HT)
+        address = tuple(c)
+        w = hamming_weight(e)
+        e_present = ac.get(address, ones)
+        w_present = hamming_weight(e_present)
+        if w < w_present:
+            ac[address] = e
     return ac
 
 # Возвращает кортеж в виде декодированного кодового вектора s, вектора ошибки

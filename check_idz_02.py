@@ -78,7 +78,8 @@ assert((len(parameters) == 1))
 
 d_ = parameters[0]
 print(f'Идет вычисление кодового расстояния d...', flush = True)
-*_, d = lc.gen_code(G)
+Wsp = lc.gen_spectrum(G)
+d = lc.spectrum_to_code_distance(Wsp)
 print(f'd = {d}', flush = True)
 print(f'Идет подбор проверочной матрицы H...', flush = True)
 H = lc.get_check_matrix(G)

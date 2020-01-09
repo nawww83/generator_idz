@@ -61,9 +61,8 @@ assert((len(parameters) == 6) and ok)
 
 n_, k_, r_, d_, qo_, qi_ = parameters
 
-CS = lc.gen_code(G)
-
-C, Wsp, d = CS
+Wsp = lc.gen_spectrum(G)
+d = lc.spectrum_to_code_distance(Wsp)
 qo = d - 1
 qi = (d - 1) // 2
 
@@ -90,27 +89,6 @@ assert(d_ == d)
 assert(qo_ == qo)
 assert(qi_ == qi)
 
-wsC = wb['Code']
-C_ = []
-for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 1 + 2**max_k, values_only = True):
-    row = list(filter(None.__ne__, row))
-    g_Ok = is_bits_vector(row)
-    n = len(row)
-    if g_Ok and n >= min_n and n <= max_n:
-        C_.append(row) # Читаем множество кодовых векторов
-
-print('Правильный код')
-pp(C)
-
-print('Введенный код')
-pp(C_)
-
-ok = True
-for c in C:
-    ok = ok and (c in C_)
-
-pp(ok)
-assert(len(C) == len(C_) and ok)
 
 wsSp = wb['CodeSpectrum']
 tmp_ = []
@@ -134,3 +112,4 @@ pp(spC_)
 assert(spC_ == Wsp)
 
 pp('All Ok')
+
