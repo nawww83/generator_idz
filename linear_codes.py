@@ -1,8 +1,8 @@
 # Модуль для работы с двоичными Линейными Блочными (n,k) Кодами
 # Для хранения матриц и векторов использует список list() из чисел 0 и 1
 from random import randint
-from random import choice
 from random import choices
+from random import choice
 from random import random
 import operator
 from functools import reduce
@@ -112,43 +112,49 @@ def gen_matrix(n, k, d_low):
     Ir = identity(r)
     Q = []
     lq = len(Q)
-    max_pops = 4 * (k * (2 ** r))
+    max_pops = 2 * (k * (2 ** r))
     pops = 0
+    eldl = exists_linear_dependence_level
+    iterations = 1
     while len(Q) < k:
         w = -1
-        while w < d_low - 1:
-            #q = get_rand_bits(r)
-            q = choices([0, 1], weights = [r - d_low + 1, d_low - 1], k = r)
-            w = hamming_weight(q)
-        Q.append(q)
         lq = len(Q)
+        while w < d_low - 1:
+            q = choices([0, 1], weights = [r - d_low, lq + d_low], k = r)
+            w = hamming_weight(q)
         failed = False
-        for i in range(1, min(d_low - 1, lq) + 1):
-            failed = exists_linear_dependence_level_l(Q, i, d_low - 1 - i, lq)
+        for i in range(1, min(d_low - 1, lq + 1) + 1):
+            failed = eldl(Q, i, d_low - 1 - i, lq, q)
             if failed:
                 break
+        Q.append(q)
+        lq += 1
         if failed:
             Q.pop()
+            lq -= 1
             pops += 1
             if pops > max_pops:
-                print(f'... failed, rows = {lq}, pops = {pops}', flush = True)
+                print(f'... failed, formed {lq} rows, pops = {pops}', flush = True)
                 pops = 0
                 Q = []
+                iterations += 1
         else:
             if lq == k - 1:
+                print(f'... last row searching', flush = True)
                 it = product([0, 1], repeat = r)
                 for q in it:
                     q = list(q)
                     w = hamming_weight(q)
                     if w < d_low - 1:
                         continue
-                    Q.append(q)
                     lq = len(Q)
                     failed = False
-                    for i in range(1, min(d_low - 1, lq) + 1):
-                        failed = exists_linear_dependence_level_l(Q, i, d_low - 1 - i, lq)
+                    for i in range(1, min(d_low - 1, lq + 1) + 1):
+                        failed = eldl(Q, i, d_low - 1 - i, lq, q)
                         if failed:
                             break
+                    Q.append(q)
+                    lq += 1
                     if failed:
                         Q.pop()
                     else:
@@ -156,8 +162,9 @@ def gen_matrix(n, k, d_low):
                 if len(Q) < k:
                     pops = 0
                     Q = []
+                    iterations += 1
                     print(f'... failed {k}th (last) row searching', flush = True)
-    print(f'finished, formed {len(Q)} rows', flush = True)
+    print(f'finished, formed {len(Q)} rows, {iterations} iterations', flush = True)
     H = augment(transpose(Q), Ir)
     d = get_code_distance(H, True)
     G = augment(Ik, Q)
@@ -197,17 +204,32 @@ def exists_linear_dependence(M, m, rows):
     return result
 
 # Возвращает True, если в матрице M найдется ровно m строк, линейная комбинация
-# которых дает строку с весом не выше lev.
-def exists_linear_dependence_level_l(M, m, lev, rows):
-    assert(m <= rows)
+# которых дает строку с весом не выше lev. Если в функцию передана.строка 
+# include, то она обязана войти в линейную комбинацию и из матрицы М будет 
+# взята m-1 строка.
+def exists_linear_dependence_level(M, m, lev, rows, include):
+    assert(m - int(bool(include)) <= rows)
     result = False
-    it = combinations(range(rows), m)
-    for index in it:
-        w = [int(i in index) for i in range(rows)]
-        l = mult_v(w, M) # Линейная комбинация строк с весами w
-        result = (sum(l) <= lev)
-        if result:
-            break
+    if not include:
+        it = combinations(range(rows), m)
+        for index in it:
+            w = [int(i in index) for i in range(rows)]
+            l = mult_v(w, M) # Линейная комбинация строк с весами w
+            result = (sum(l) <= lev)
+            if result:
+                break
+    else:
+        if m == 1:
+            result = (sum(include) <= lev)
+        else:
+            it = combinations(range(rows), m - 1)
+            for index in it:
+                w = [int(i in index) for i in range(rows)]
+                l = mult_v(w, M) # Линейная комбинация строк с весами w
+                l = xor(l, include)
+                result = (sum(l) <= lev)
+                if result:
+                    break
     return result
 
 # Возвращает кодовое расстояние (n, k)-кода по его проверочной матрице
