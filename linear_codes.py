@@ -168,8 +168,6 @@ iterations = {iterations}', flush = True)
                     iterations += 1
                     print(f'... failed {k}th (last) row searching', flush = True)
     print(f'finished, formed {len(Q)} rows, {iterations} iterations', flush = True)
-    H = augment(transpose(Q), Ir)
-    #d = get_code_distance(H, True)
     G = augment(Ik, Q)
     return G, iterations
 

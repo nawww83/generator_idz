@@ -135,9 +135,7 @@ k_ = len(a_)
 assert(n_ == n)
 assert(k_ == k)
 
-# ac = lc.get_adjacent_classes(H)
 ac = lc.get_min_adjacent_classes(H)
-#s_est, e, c = lc.correct(v, H, ac)
 c = lc.mult_v(v, lc.transpose(H))
 e = ac[tuple(c)]
 s_est = lc.xor(v, e)

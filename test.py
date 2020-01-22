@@ -6,10 +6,10 @@ from random import choice
 
 # Ограничения на параметры (n, k) кода
 min_n = 3
-max_n = 18
+max_n = 20
 min_k = 1
-max_k = 15
-min_r = 2
+max_k = 19
+min_r = 1
 
 assert(min_k < min_n)
 assert(max_k < max_n)
@@ -29,7 +29,7 @@ while True:
     print(f'n = {n}, k = {k}, r = {r}', flush = True)
     print(f'Generate a generator matrix G...', flush = True)
     t0 = time.perf_counter()
-    G, d_gen = lc.gen_matrix(n, k, d_low)
+    G, _ = lc.gen_matrix(n, k, d_low)
     t1 = time.perf_counter()
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'Shuffling G matrix...', flush = True)
@@ -64,7 +64,7 @@ while True:
     t1 = time.perf_counter()
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'd_max = {d_max}, d_low = {d_low}, d = {d}, d_dist = {dist}', flush = True)
-    assert(d == dist == d_gen)
+    assert(d == dist)
     assert(d >= d_low)
     assert(Wsp[0] == 1)
     assert(sum(Wsp.values()) == 2**k)
