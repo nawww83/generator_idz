@@ -108,7 +108,8 @@ def gen_matrix(n, k, d_low):
     assert(k < n)
     Ik = identity(k)
     r = n - k
-    assert(d_low <= r + 1)
+    defect = ((1 // r) or (1 // k))
+    assert(d_low <= r + defect)
     Ir = identity(r)
     Q = []
     lq = len(Q)
@@ -120,9 +121,8 @@ def gen_matrix(n, k, d_low):
         w = -1
         lq = len(Q)
         while w < d_low - 1:
-            # Для кода (3, 1, d = 3) особенный случай: достижима граница Синглтона.
-            # То же касается кода (3, 2, d = 2). В итоге, коды (3, k).
-            q = choices([0, 1], weights = [r + 1 + 3 // n - d_low, lq + d_low], k = r)
+            q = choices([0, 1], \
+            weights = [r + defect + 1 - d_low, lq + d_low], k = r)
             w = hamming_weight(q)
         failed = False
         for i in range(1, min(d_low - 1, lq + 1) + 1):
@@ -136,7 +136,8 @@ def gen_matrix(n, k, d_low):
             lq -= 1
             pops += 1
             if pops > max_pops:
-                print(f'... failed, formed {lq} rows, pops = {pops}', flush = True)
+                print(f'... failed, formed {lq} rows, pops = {pops}, \
+iterations = {iterations}', flush = True)
                 pops = 0
                 Q = []
                 iterations += 1
@@ -168,9 +169,9 @@ def gen_matrix(n, k, d_low):
                     print(f'... failed {k}th (last) row searching', flush = True)
     print(f'finished, formed {len(Q)} rows, {iterations} iterations', flush = True)
     H = augment(transpose(Q), Ir)
-    d = get_code_distance(H, True)
+    #d = get_code_distance(H, True)
     G = augment(Ik, Q)
-    return G, d
+    return G, iterations
 
 # По порождающей матрице G возвращает спектр кода
 def gen_spectrum(G):
