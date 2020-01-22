@@ -120,7 +120,9 @@ def gen_matrix(n, k, d_low):
         w = -1
         lq = len(Q)
         while w < d_low - 1:
-            q = choices([0, 1], weights = [r - d_low, lq + d_low], k = r)
+            # Для кода (3, 1, d = 3) особенный случай: достижима граница Синглтона.
+            # То же касается кода (3, 2, d = 2). В итоге, коды (3, k).
+            q = choices([0, 1], weights = [r + 1 + 3 // n - d_low, lq + d_low], k = r)
             w = hamming_weight(q)
         failed = False
         for i in range(1, min(d_low - 1, lq + 1) + 1):
