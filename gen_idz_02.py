@@ -4,6 +4,7 @@ from openpyxl.styles import Font
 import linear_codes as lc
 import sys
 from pprint import pprint as pp
+import numpy as np
 
 mjr = sys.version_info.major
 mnr = sys.version_info.minor
@@ -37,7 +38,8 @@ while True:
 r = n - k
 
 print(f'Введите нижнюю границу кодового расстояния (n, k)-кода ({n}, {k})')
-print(f'Рекомендуется не более {max( (n-k+1) // 2, 2 )}')
+d_recomend = lc.get_recomend_code_distance(n, k)
+print(f'Рекомендуется не более {d_recomend}')
 try:
     d_low_bound = int(input())
 except:

@@ -3,12 +3,13 @@ import linear_codes as lc
 import time
 from pprint import pprint as pp
 from random import choice
+import numpy as np
 
 # Ограничения на параметры (n, k) кода
 min_n = 3
-max_n = 20
+max_n = 18
 min_k = 1
-max_k = 19
+max_k = 17
 min_r = 1
 
 assert(min_k < min_n)
@@ -24,8 +25,8 @@ while True:
 
     print(f'*******************')
     r = n - k
-    d_max = r + 1
-    d_low = max( d_max // 2, 2)
+    d_max = lc.get_recomend_code_distance(n, k)
+    d_low = d_max
     print(f'n = {n}, k = {k}, r = {r}', flush = True)
     print(f'Generate a generator matrix G...', flush = True)
     t0 = time.perf_counter()
@@ -78,14 +79,16 @@ while True:
     print(f'Error vector e = {e} with weight {q}')
     v = lc.xor(s, e)
     print(f'Received code vector v = {v}')
-    print(f'Generation adjacent classes...', flush = True)
+    print(f'Generation min adjacent classes...', flush = True)
     t0 = time.perf_counter()
-    ac = lc.get_adjacent_classes(Hsh)
+    ac = lc.get_min_adjacent_classes(Hsh)
     t1 = time.perf_counter()
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'Correction received vector...', flush = True)
     t0 = time.perf_counter()
-    s_est, e_, c_ = lc.correct(v, Hsh, ac)
+    c_ = lc.mult_v(v, lc.transpose(Hsh))
+    e_ = ac[tuple(c_)]
+    s_est = lc.xor(v, e_)
     t1 = time.perf_counter()
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'Corrected code vector s_est = {s_est}')

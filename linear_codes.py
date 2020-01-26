@@ -109,11 +109,12 @@ def gen_matrix(n, k, d_low):
     Ik = identity(k)
     r = n - k
     defect = ((1 // r) or (1 // k))
+    assert(d_low > 1)
     assert(d_low <= r + defect)
     Ir = identity(r)
     Q = []
     lq = len(Q)
-    max_pops = 2 * (k * (2 ** r))
+    max_pops = (k * (2 ** r)) // 2
     pops = 0
     eldl = exists_linear_dependence_level
     iterations = 1
@@ -614,4 +615,14 @@ def probability_bsc_more(q_low, n, p):
             tmp += probability_bsc(q, n, p)
         p_err, p_compl = tmp, 1. - tmp
     return p_err, p_compl
+
+# Возвращает рекомендуемое кодовое расстояние. 
+# Альтернатива неравенству Хемминга.
+def get_recomend_code_distance(n, k):
+    if n - k == 1: # Код с проверкой на четность
+        return 2
+    elif k == 1:
+        return n   # Код с повторением
+    else:
+        return max(2, int(2. * (n - k) / np.log2(n + 1.) + 1.))
 
