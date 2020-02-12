@@ -57,15 +57,19 @@ def identity(k):
 def xor(x, y):
     assert(len(x) == len(y))
     mod2 = [2] * len(x)
-    z = list(map(operator.add, x, y))
+    z = map(operator.add, x, y)
     return list(map(operator.mod, z, mod2))
 
 # Возврашает сумму по модулю два элементов вектора v
 def xor1(v):
-    return reduce(lambda x, y: (x + y) % 2, v)
+    return reduce(lambda x, y: x ^ y, v)
+
+# Возврашает НЕ от логического ИЛИ элементов вектора v
+def nor1(v):
+    return 1 - reduce(lambda x, y: x | y, v)
 
 def hamming_weight(v):
-    return len(list(filter(lambda x: x != 0 , v)))
+    return sum(filter(lambda x: x != 0 , v))
 
 # Возвращает произведение вектора на матрицу
 def mult_v(v, M):
@@ -200,7 +204,7 @@ def exists_linear_dependence(M, m, rows):
     for index in it:
         w = [int(i in index) for i in range(rows)]
         l = mult_v(w, M) # Линейная комбинация строк с весами w
-        result = (sum(l) == 0)
+        result = nor1(l)
         if result:
             break
     return result
