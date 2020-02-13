@@ -6,80 +6,100 @@ import sys
 from random import choice
 from random import random
 from pprint import pprint as pp
+import pytils.translit
+import re
 
-mjr = sys.version_info.major
-mnr = sys.version_info.minor
-if (mjr == 3 and mnr < 7) or mjr < 3:
-    print('Требуется Python версии 3.7 и выше!')
-    exit()
+def has_numbers(s):
+    return re.search('\d', s)
 
-student = 'IvanovAA'
-task_code = '05'
-group = '1B6'
+def generator(group, student, task_code):
+    # Вид модуляции
+    m = round( random() * (m_max - m_min) + m_min )
 
-# Ограничения на вид модуляции
-m_min = 0
-m_max = 8
+    print(f'Вид модуляции: {m}')
 
-modulations = {0: 'АМн когер.', 1: 'АМн некогер.', 2: 'ЧМн когер.', \
-3: 'ЧМн некогер.', 4: 'ФМн когер.', 5: 'ФМн част. когер.', \
-6: 'ФМн-4/КАМ-4 когер.', 7: 'ФМн-4/КАМ-4 част. когер', 8: 'ФМн-8 когер.'}
+    # Длина кода
+    n = round( random() * (n_max - n_min) + n_min )
 
-# Ограничения на параметры (n, k) кода
-n_min = 31
-n_max = 255
-# Ограничение на вероятность битовой ошибки на выходе декодера
-p_min = 1.e-09
-p_max = 1.e-02
+    print(f'Длина кода: {n}')
 
-# Ограничение на кратность исправления
-q_min = 1
-q_max = 7
+    # Вероятность ошибки
+    p = random() * (p_max - p_min) + p_min
 
-hf = Font(name = 'Calibri', bold = True)
+    print(f'Вероятность битовой ошибки P бит. дек.: {p}')
 
-# Вид модуляции
-m = round( random() * (m_max - m_min) + m_min )
+    # Кратность исправления
+    q = round( random() * (q_max - q_min) + q_min )
 
-print(f'Вид модуляции: {m}')
+    print(f'Кратность исправления: {q}')
 
-# Длина кода
-n = round( random() * (n_max - n_min) + n_min )
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Main'
 
-print(f'Длина кода: {n}')
+    hf = Font(name = 'Calibri', bold = True)
 
-# Вероятность ошибки
-p = random() * (p_max - p_min) + p_min
+    ws.append(['Вид модуляции m:'])
+    ws.append([m])
+    ws.append(['Длина кода n:'])
+    ws.append([n])
+    ws.append(['Требуемая вероятность битовой ошибки P бит. дек.:'])
+    ws.append([p])
+    ws.append(['Кратность исправления qи:'])
+    ws.append([q])
 
-print(f'Вероятность битовой ошибки P бит. дек.: {p}')
+    wsC = wb.create_sheet('Check')
+    wsC.append(['Введите ответы:'])
+    wsC.cell(row = wsC.max_row, column = 1).font = hf
+    wsC.append(['Скорость кодирования R:'])
+    wsC.append([0.])
+    wsC.append(['Отношение сигнал-шум на один бит, Eb/N0, дБ'])
+    wsC.append([0.])
+    wsC.append(['Внимание! Ответы давать с точностью не хуже 1%'])
+    wsC.cell(row = wsC.max_row, column = 1).font = hf
 
-# Кратность исправления
-q = round( random() * (q_max - q_min) + q_min )
+    wb.save(f'{student}_{task_code}_{group}.xlsx')
 
-print(f'Кратность исправления: {q}')
+if __name__ == "__main__":
+    mjr = sys.version_info.major
+    mnr = sys.version_info.minor
+    if (mjr == 3 and mnr < 7) or mjr < 3:
+        print('Требуется Python версии 3.7 и выше!')
+        exit()
 
-wb = Workbook()
-ws = wb.active
-ws.title = 'Main'
+    fn = 'list_magister_titpi_2020.txt'
+    task_code = '05'
 
-ws.append(['Вид модуляции m:'])
-ws.append([m])
-ws.append(['Длина кода n:'])
-ws.append([n])
-ws.append(['Требуемая вероятность битовой ошибки P бит. дек.:'])
-ws.append([p])
-ws.append(['Кратность исправления qи:'])
-ws.append([q])
+    # Ограничения на вид модуляции
+    m_min = 0
+    m_max = 8
 
-wsC = wb.create_sheet('Check')
-wsC.append(['Введите ответы:'])
-wsC.cell(row = wsC.max_row, column = 1).font = hf
-wsC.append(['Скорость кодирования R:'])
-wsC.append([0.])
-wsC.append(['Отношение сигнал-шум на один бит, Eb/N0, дБ'])
-wsC.append([0.])
-wsC.append(['Внимание! Ответы давать с точностью не хуже 1%'])
-wsC.cell(row = wsC.max_row, column = 1).font = hf
+    modulations = {0: 'АМн когер.', 1: 'АМн некогер.', 2: 'ЧМн когер.', \
+    3: 'ЧМн некогер.', 4: 'ФМн когер.', 5: 'ФМн част. когер.', \
+    6: 'ФМн-4/КАМ-4 когер.', 7: 'ФМн-4/КАМ-4 част. когер', 8: 'ФМн-8 когер.'}
 
-wb.save(f'{student}_{task_code}_{group}.xlsx')
+    # Ограничения на параметры (n, k) кода
+    n_min = 31
+    n_max = 255
+    # Ограничение на вероятность битовой ошибки на выходе декодера
+    p_min = 1.e-09
+    p_max = 1.e-02
 
+    # Ограничение на кратность исправления
+    q_min = 1
+    q_max = 7
+
+    students_file = open(fn, 'r', encoding = 'utf-8')
+    students = students_file.readlines()
+    group = ''
+    student = ''
+    for s in students:
+        s = s.strip()
+        if s:
+            s_translit = pytils.translit.translify(s)
+            print(s_translit)
+            if has_numbers(s_translit):
+                group = s_translit
+            else:
+                student = s_translit
+                generator(group, student, task_code)
