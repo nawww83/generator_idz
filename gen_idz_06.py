@@ -35,7 +35,7 @@ def generator(group, student, task_code):
 
         q2_target = er.dB2pow(q1) / m / er.dB2pow(f)
         p_orp_1 = 0.5 * np.exp(- 0.5 * q2_target)
-        p_target_approx, _ = lc.probability_bsc_more(0, m + 1, p_orp_1)
+        p_target_approx, _ = lc.probability_bsc_more(0, n // m, p_orp_1)
         if p_target_approx > 1.e-9 and p_target_approx < 0.1: 
             # Исключаем вероятность выше 0.1 
             # из-за неработоспособности такой системы передачи информации

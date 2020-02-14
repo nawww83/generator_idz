@@ -73,9 +73,9 @@ for row in wsC.iter_rows(min_row = 1, max_col = 1, max_row = 10, values_only = T
 
 p_approx_, p_exact_, q1_nrp_, q1_orp_ = params
 
-assert(p_approx_ > 0.)
+assert(p_approx_ >= 0.)
 assert(p_approx_ <= 1.)
-assert(p_exact_ > 0.)
+assert(p_exact_ >= 0.)
 assert(p_exact_ <= 1.)
 assert(q1_nrp_ >= q1_orp_)
 
@@ -91,13 +91,13 @@ print(f' - ОРП: {q1_orp_}, дБ')
 q2_target = er.dB2pow(q1_) / m_ / er.dB2pow(f_)
 p_orp_1 = 0.5 * np.exp(- 0.5 * q2_target)
 
-p_target_approx, _ = lc.probability_bsc_more(0, m_ + 1, p_orp_1)
+p_target_approx, _ = lc.probability_bsc_more(0, n_ // m_, p_orp_1)
 p_target_exact = 0.
 for i in range(1, m_ + 2, 2):
-    p_target_exact += lc.probability_bsc(i, m_ + 1, p_orp_1)
+    p_target_exact += lc.probability_bsc(i, n_ // m_, p_orp_1)
 
 q2_nrp = - 2. * n_ * er.dB2pow(f_) * np.log(2 * p_target_exact)
-p_tmp = 1. - np.power(1. - p_target_exact, 1. / (m_ + 1.))
+p_tmp = 1. - np.power(1. - p_target_exact, 1. / (n_ + 1.))
 q2_orp = - 2. * er.dB2pow(f_) * np.log(2 * p_tmp) 
 
 print(f'Правильные ответы:')
