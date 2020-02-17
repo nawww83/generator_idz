@@ -15,38 +15,39 @@ if (mjr == 3 and mnr < 7) or mjr < 3:
     print('Требуется Python версии 3.7 и выше!')
     exit()
 
-student = 'IvanovAA'
+student = 'Nozdrevatyih Dar\'ya Olegovna'
 task_code = '07'
-group = '1B6'
+group = '1B9-M'
 
+# Объем алфавита X
+m_alphabet = 3
 # Наименьшая вероятность
-p_min = 0.05
+min_p = 0.05
 # Наибольшая вероятность
-p_max = 0.95
+max_p = 0.95
 
 hf = Font(name = 'Calibri', bold = True)
 
 fname = f'{student}_{task_code}_{group}.xlsx'
+print(fname)
 
 wb = load_workbook(fname)
 
 ws = wb['Main']
+head_rows = 1 # Число строк на заголовок
+trash_rows = 1 # Число "мусорных" строк
 params = []
-for row in ws.iter_rows(min_row = 1, max_col = 4, max_row = 4, values_only = True):
+for row in ws.iter_rows(min_row = 1, max_col = m_alphabet + 1, \
+        max_row = trash_rows + 2 + 1, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     n_row = len(row)
     if n_row > 0:
         params.append(row)
 
-_, sym_, P_ = params
-p1, p2, p3 = P_
+params = params[head_rows: ]
+sym_, P_ = params
 
-assert(p1 >= p_min)
-assert(p1 <= p_max)
-assert(p2 >= p_min)
-assert(p2 <= p_max)
-assert(p3 >= p_min)
-assert(p3 <= p_max)
+assert(sc.all_in_range_incl(P_, min_p, max_p))
 
 al_ = dict(zip(sym_, P_))
 print(f'Алфавит, {{X, P}}: {al_}')
@@ -54,18 +55,26 @@ print(f'Норма: {sum(al_.values())}')
 
 
 wsC = wb['Check']
+head_rows = 3 # Число строк на заголовок
+trash_rows = 5 # Число "мусорных" строк
 params = []
-len_code_limit = 2 * int(np.log2(1. / min(P_)) + 0.5) + 2 # Учет двойного символа XX
-for row in wsC.iter_rows(min_row = 1, max_col = len_code_limit + 2, max_row = 18, values_only = True):
+len_code_limit = 2 * int(np.log2(1. / min(P_)) + 0.5) + 1
+for row in wsC.iter_rows(min_row = 1, max_col = len_code_limit + 1, \
+        max_row = trash_rows + 1 + m_alphabet + m_alphabet * m_alphabet, values_only = True):
     row = list(filter(None.__ne__, row)) # Убирает ненужные None
     n_row = len(row)
     if n_row > 0:
         params.append(row)
 
-_, _, _, code_0_, code_1_, code_2_, *_ = params
+params = params[head_rows: ]
 
-sym = code_0_.pop(0), code_1_.pop(0), code_2_.pop(0)
-code_ = dict(zip(sym, [code_0_, code_1_, code_2_]))
+symbols = []
+code_words = []
+for i in range(m_alphabet):
+    symbols.append(params[i].pop(0))
+    code_words.append(params[i])
+
+code_ = dict(zip(symbols, code_words))
 
 print('Введенный код Хаффмана для символа X:')
 print(code_)
@@ -87,24 +96,17 @@ for k, v in code.items():
 assert(l_ == l)
 
 # По свойству префикса
-cv = code_.values()
-is_prefix = False
-for k, v in code_.items():
-    for c in cv:
-        if len(v) < len(c):
-            is_prefix = (v == c[: len(v)])
-            if is_prefix:
-                break
-    if is_prefix:
-        break
-
+is_prefix = sc.check_prefix(code_)
 assert(not is_prefix)
 
-params = params[-9:]
+params = params[-m_alphabet * m_alphabet: ]
+symbols = []
+code_words = []
+for i in range(m_alphabet * m_alphabet):
+    symbols.append(params[i].pop(0))
+    code_words.append(params[i])
 
-sym = [i.pop(0) for i in params]
-code_ = params # pop(0)
-code_ = dict(zip(sym, code_))
+code_ = dict(zip(symbols, code_words))
 
 print('Введенный код Хаффмана для символа XX:')
 print(code_)
@@ -113,8 +115,8 @@ alal = {}
 sym_match = {}
 for k1, v1 in al_.items():
     for k2, v2 in al_.items():
-        sym_match[k1 + k2 * 3] = str(k2) + str(k1)
-        alal[k1 + k2 * 3] = v1 * v2
+        sym_match[k1 + k2 * m_alphabet] = str(k2) + str(k1)
+        alal[k1 + k2 * m_alphabet] = v1 * v2
 
 code_xx = sc.make_huffman_table(alal)
 code_xx = dict(sorted(code_xx.items()))
@@ -138,16 +140,7 @@ for k, v in code.items():
 assert(l_ == l)
 
 # По свойству префикса
-cv = code_.values()
-is_prefix = False
-for k, v in code_.items():
-    for c in cv:
-        if len(v) < len(c):
-            is_prefix = (v == c[: len(v)])
-            if is_prefix:
-                break
-    if is_prefix:
-        break
+is_prefix = sc.check_prefix(code_)
 
 assert(not is_prefix)
 
