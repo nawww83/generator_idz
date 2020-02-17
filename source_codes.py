@@ -12,7 +12,7 @@ def all_in_range_incl(X, a, b):
     return reduce(lambda x, y: x and y, \
         map(in_range_incl, X, [a]*len(X), [b]*len(X)))
 
-# Возвращает вектор n вероятностей
+# Возвращает вектор n вероятностей, так, что их сумма равна единице
 def get_probabilities_vector(n):
     P = [random() for _ in range(n)]
     norma = sum(P)
