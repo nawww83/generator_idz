@@ -38,14 +38,14 @@ def generator(group, student, task_code):
     wsC.append(['Код Хаффмана для символа X:'])
     wsC.append(['Символ', 'Код'])
     for k, v in al.items():
-        len_code_limit = int(np.log2(1. / v) + 0.5)
+        len_code_limit = int(np.log2(1. / v) + 0.5) + 1
         code = lc.get_rand_bits(len_code_limit)
         wsC.append([k] + code)
     wsC.append(['Код Хаффмана для символа XX:'])
     wsC.append(['Символ', 'Код'])
     for k1, v1 in al.items():
         for k2, v2 in al.items():
-            len_code_limit = int(np.log2(1. / v1 / v2) + 0.5)
+            len_code_limit = int(np.log2(1. / v1 / v2) + 0.5) + 1
             code = lc.get_rand_bits(len_code_limit)
             wsC.append([str(k1) + str(k2)] + code)
 
