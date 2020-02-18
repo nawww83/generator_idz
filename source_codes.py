@@ -116,12 +116,14 @@ def need_down_correct(val, weight, threshold):
 def make_shannon_fano_table(al):
     n = len(al)
     al_sorted = {}
+    trace = {}
     i = 0
     # Сортировка алфавита в порядке убывания вероятностей
     for k in sorted(al, key = al.get, reverse = True):
         al_sorted[i] = al[k]
+        trace[i] = k
         i += 1
-    
+
     # Поиск подгрупп с равными суммарными вероятностями
     boundaries = {}
     level = 0 # Первоначальное состояние, 
@@ -160,5 +162,46 @@ def make_shannon_fano_table(al):
             boundaries[level].append(i)
             start = stop + 1
         boundaries[level].sort()
-    # TODO: доделать формирование кодовой таблице по boundaries
-    return boundaries
+    # TODO: доделать формирование кодовой таблицы по boundaries
+
+    code_tree = {}
+    used = set()
+    for k, lv in boundaries.items():
+        #print(f'key: {k}')
+        lv.remove(n - 1)
+        if k > 0:
+            middle_points = list(set(lv) - used)
+            middle_points.sort()
+            #print(f'middle points {middle_points}')
+            for mp in middle_points:
+                #print(f' point {mp}')
+                #print(f' values list {lv}')
+                start = 0
+                stop = n - 1
+                if k > 1:
+                    start = mp - 1
+                    while start not in lv:
+                        if start < 0:
+                            break
+                        start -= 1
+                    start += 1
+                    stop = mp + 1
+                    while stop not in lv:
+                        if stop == n - 1:
+                            break
+                        stop += 1
+                #print(f'start {start}')
+                #print(f'stop {stop}')
+                i = start
+                bit = 1
+                used.add(mp)
+                while True:
+                    code_tree.setdefault(trace[i], [])
+                    code_tree[trace[i]].append(bit)
+                    #print(f'  modified i = {i}, trace = {trace[i]}, bit = {bit}')
+                    i += 1
+                    bit = int(i <= mp)
+                    if i > stop:
+                        break
+
+    return code_tree
