@@ -33,20 +33,20 @@ def get_probabilities_vector(n):
 
 # Проверяет свойство префикса кода code = {symbol: code_word}
 def check_prefix(code):
-    is_prefix = False
+    ok = True
     for k, v in code.items():
         cv = list(code.values())
         iv = cv.index(v)
-        cv.pop(iv)
+        cv.pop(iv) # Чтобы не было пересечения вектора с самим собой
         for c in cv:
             if len(v) <= len(c):
-                is_prefix = (v == c[: len(v)])
-                if is_prefix:
+                ok = (v != c[: len(v)])
+                if not ok:
                     break
-        if is_prefix:
+        if not ok:
             break
 
-    return is_prefix
+    return ok
 
 # Генерирует таблицу кода Хаффмана по заданному алфавиту 
 # al = {symbol: probability}, где symbol - символы 0, 1, ..., m - 1
@@ -116,34 +116,36 @@ def need_down_correct(val, weight, threshold):
 def make_shannon_fano_table(al):
     n = len(al)
     al_sorted = {}
-    trace = {}
+    trace = []
     i = 0
     # Сортировка алфавита в порядке убывания вероятностей
     for k in sorted(al, key = al.get, reverse = True):
         al_sorted[i] = al[k]
-        trace[i] = k
+        trace.append(k)
         i += 1
-
     # Поиск подгрупп с равными суммарными вероятностями
-    boundaries = {}
-    level = 0 # Первоначальное состояние, 
-    # при построении кода level = 0 игнорируется
+    boundaries = {} # Требуется Python >= 3.7 для гарантии 
+    # сохранения порядка вставки (keeps insertion order)
+    level = 0 # Первоначальное состояние level = 0, 
+    # при построении кода игнорируется
     boundaries.setdefault(level, [])
-    threshold = 0.5
     boundaries[level].append(n - 1)
-
+    # Уровни level отображают этапы формирования кодовой таблицы
+    # level = 1: первое деление на подгруппы и присвоение 1 и 0
+    # level = 2: второе ... до тех пор пока возможно деление
     while len(boundaries[level]) < n:
-        #print(boundaries)
         bnd = boundaries[level]
         start = 0
         level += 1
         boundaries.setdefault(level, [])
+        # Если boundaries[level] содержит все числа от 0 до n - 1, то
+        # дальнейшее деление на подгруппы невозможно: код сформирован
         boundaries[level] += boundaries[level - 1]
         for b in bnd:
             stop = b
-            threshold = 0.
-            if stop == start: # Подгруппа сформирована
-                start = stop + 1
+            threshold = 0. # Пороговая вероятность
+            if stop == start: # Подгруппа уже сформирована
+                start = stop + 1 # Переход к следующей подгруппе
                 continue
             for k in range(start, stop + 1):
                 threshold += al_sorted[k]
@@ -156,52 +158,48 @@ def make_shannon_fano_table(al):
                 if i == stop + 1 or i == n:
                     break
             i = i - 1
+            # Проверяем не перебрали ли?
             need = need_down_correct(al_sorted[i], weight, threshold)
             if need:
                 i -= 1
+            # Нашли границу в подгруппе
             boundaries[level].append(i)
             start = stop + 1
         boundaries[level].sort()
-    # TODO: доделать формирование кодовой таблицы по boundaries
-
+    # Формирование кодовой таблицы по найденным границам boundaries
     code_tree = {}
-    used = set()
+    used = {n - 1} # Использованные средние точки (границы)
     for k, lv in boundaries.items():
-        #print(f'key: {k}')
-        lv.remove(n - 1)
-        if k > 0:
-            middle_points = list(set(lv) - used)
-            middle_points.sort()
-            #print(f'middle points {middle_points}')
-            for mp in middle_points:
-                #print(f' point {mp}')
-                #print(f' values list {lv}')
-                start = 0
-                stop = n - 1
-                if k > 1:
-                    start = mp - 1
-                    while start not in lv:
-                        if start < 0:
-                            break
-                        start -= 1
-                    start += 1
-                    stop = mp + 1
-                    while stop not in lv:
-                        if stop == n - 1:
-                            break
-                        stop += 1
-                #print(f'start {start}')
-                #print(f'stop {stop}')
-                i = start
-                bit = 1
-                used.add(mp)
-                while True:
-                    code_tree.setdefault(trace[i], [])
-                    code_tree[trace[i]].append(bit)
-                    #print(f'  modified i = {i}, trace = {trace[i]}, bit = {bit}')
-                    i += 1
-                    bit = int(i <= mp)
-                    if i > stop:
-                        break
+        if k == 0: # Игнорируем level = 0
+            continue 
+        # Текущий набор средних точек (границ)
+        middle_points = list(set(lv) - used)
+        middle_points.sort()
+        for mp in middle_points:
+            start = 0
+            stop = n - 1
+            start = mp - 1
+            while start not in lv:
+                if start < 0:
+                    break
+                start -= 1
+            start += 1
+            stop = mp + 1
+            while stop not in lv:
+                if stop == n - 1:
+                    break
+                stop += 1
+            i = start
+            bit = int(i <= mp) # Верхней подгруппе бит 1
+            # Верхняя подгруппа - до средней точки
+            used.add(mp)
+            while True:
+                code_tree.setdefault(trace[i], [])
+                code_tree[trace[i]].append(bit)
+                i += 1
+                bit = int(i <= mp)
+                if i > stop:
+                    break
 
     return code_tree
+

@@ -96,8 +96,9 @@ for k, v in code.items():
 assert(l_ == l)
 
 # По свойству префикса
-is_prefix = sc.check_prefix(code_)
-assert(not is_prefix)
+ok = sc.check_prefix(code_)
+
+assert(ok)
 
 params = params[-m_alphabet * m_alphabet: ]
 symbols = []
@@ -140,8 +141,8 @@ for k, v in code.items():
 assert(l_ == l)
 
 # По свойству префикса
-is_prefix = sc.check_prefix(code_)
+ok = sc.check_prefix(code_)
 
-assert(not is_prefix)
+assert(ok)
 
 print('All Ok')
