@@ -87,7 +87,7 @@ if __name__ == "__main__":
         print('Требуется Python версии 3.7 и выше!')
         exit()
 
-    fn = 'list_magister_titpi_2020.txt'
+    fn = 'list_bakalavr_ots_2020.txt'
     task_code = '06'
 
     # Ограничения на общее число участков, N

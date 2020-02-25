@@ -65,7 +65,7 @@ if __name__ == "__main__":
     # Наибольшая вероятность
     max_p = 0.95
     
-    fn = 'list_magister_titpi_2020.txt'
+    fn = 'list_bakalavr_ots_2020.txt'
     task_code = '07'
 
     students_file = open(fn, 'r', encoding = 'utf-8')

@@ -94,7 +94,7 @@ if __name__ == "__main__":
         exit()
 
     task_code = '01'
-    fn = 'list_magister_titpi_2020.txt'
+    fn = 'list_bakalavr_ots_2020.txt'
 
     # Ограничения на параметры (n, k) кода
     min_n = 6
