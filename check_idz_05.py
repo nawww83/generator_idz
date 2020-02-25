@@ -27,7 +27,6 @@ def checker(group, student, task_code):
         print(f'Файл {fname} не найден')
         return
 
-
     wb = load_workbook(fname)
 
     ws = wb['Main']
