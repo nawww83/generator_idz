@@ -111,6 +111,7 @@ if __name__ == "__main__":
     student = ''
     for s in students:
         s = s.strip()
+        s = s.replace('#', '')
         if s:
             s_translit = pytils.translit.translify(s)
             print(s_translit)

@@ -7,6 +7,11 @@ import operator
 from functools import reduce
 from pprint import pprint as pp
 from copy import deepcopy
+import pytils.translit
+import re
+
+def has_numbers(s):
+    return re.search('\d', s)
 
 # Проверяет состоит ли вектор только из 0 и 1
 def is_bits_vector(v):
@@ -16,175 +21,199 @@ def is_bits_vector(v):
 def is_int_vector(v):
     return all(map(lambda x: isinstance(x, int), v))
 
-mjr = sys.version_info.major
-mnr = sys.version_info.minor
-if (mjr == 3 and mnr < 7) or mjr < 3:
-    print('Требуется Python версии 3.7 и выше!')
-    exit()
+def checker(group, student, task_code):
+    fname = f'{student}_{task_code}_{group}.xlsx'
 
-student = 'IvanovAA'
-task_code = '03'
-group = '1B6'
+    print(f'\n')
+    print(f'*********************')
+    print(f'Чтение файла {fname}')
 
-# Ограничения на параметры (n, k) кода
-min_n = 6
-max_n = 15
-min_k = 3
-max_k = 5
-min_r = 2
+    try:
+        wb = load_workbook(fname)
+    except FileNotFoundError:
+        print(f'Файл {fname} не найден')
+        return
 
-assert(min_k < min_n)
-assert(max_k < max_n)
+    ws = wb['Main']
+    G = []
+    for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 4 + max_k, values_only = True):
+        row = list(filter(None.__ne__, row)) # Убирает ненужные None
+        g_Ok = is_bits_vector(row)
+        n_row = len(row)
+        if g_Ok and n_row >= min_n and n_row <= max_n:
+            G.append(row) # Читаем матрицу кода
 
-fname = f'{student}_{task_code}_{group}.xlsx'
+    # В конце считанной матрицы принятый кодовый вектор
+    v = G.pop()
 
-wb = load_workbook(fname)
+    print('Принятый кодовый вектор')
+    pp(v)
 
-ws = wb['Main']
-G = []
-for row in ws.iter_rows(min_row = 1, max_col = max_n, max_row = 4 + max_k, values_only = True):
-    row = list(filter(None.__ne__, row)) # Убирает ненужные None
-    g_Ok = is_bits_vector(row)
-    n_row = len(row)
-    if g_Ok and n_row >= min_n and n_row <= max_n:
-        G.append(row) # Читаем матрицу кода
+    k, n, ok = lc.check_matrix(G)
+    r = n - k
+    assert(ok)
 
-# В конце считанной матрицы принятый кодовый вектор
-v = G.pop()
+    print('Порождающая матрица кода')
+    pp(G)
 
-print('Принятый кодовый вектор')
-pp(v)
+    parameters = []
+    H_ = []
+    wsC = wb['Check']
+    for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - min_k, values_only = True):
+        row = list(filter(None.__ne__, row)) # Убирает ненужные None
+        h_Ok = is_bits_vector(row)
+        n_row = len(row)
+        if h_Ok and n_row >= min_n and n_row <= max_n:
+            H_.append(row) # Читаем матрицу кода
+        elif n_row == 1 and isinstance(row[0], int):
+            parameters.append(row[0])
 
-k, n, ok = lc.check_matrix(G)
-r = n - k
-assert(ok)
+    r, n, ok = lc.check_matrix(H_)
+    k = n - r
+    assert(ok)
 
-print('Порождающая матрица кода')
-pp(G)
+    assert((len(parameters) == 1))
 
-parameters = []
-H_ = []
-wsC = wb['Check']
-for row in wsC.iter_rows(min_row = 1, max_col = max_n, max_row = 5 + max_n - min_k, values_only = True):
-    row = list(filter(None.__ne__, row)) # Убирает ненужные None
-    h_Ok = is_bits_vector(row)
-    n_row = len(row)
-    if h_Ok and n_row >= min_n and n_row <= max_n:
-        H_.append(row) # Читаем матрицу кода
-    elif n_row == 1 and isinstance(row[0], int):
-        parameters.append(row[0])
+    d_ = parameters[0]
+    Wsp = lc.gen_spectrum(G)
+    d = lc.spectrum_to_code_distance(Wsp)
+    print('Подождите идет подбор матрицы H...')
+    H = lc.get_check_matrix(G)
+    d_alter = lc.get_code_distance(H, False)
 
-r, n, ok = lc.check_matrix(H_)
-k = n - r
-assert(ok)
+    print('Правильные ответы:')
+    pp(f'd = {d}, альтернативный метод d = {d_alter}')
 
-assert((len(parameters) == 1))
+    assert(d == d_alter)
 
-d_ = parameters[0]
-Wsp = lc.gen_spectrum(G)
-d = lc.spectrum_to_code_distance(Wsp)
-print('Подождите идет подбор матрицы H...')
-H = lc.get_check_matrix(G)
-d_alter = lc.get_code_distance(H, False)
+    print('Введенные ответы:')
+    pp(f'd = {d_}')
 
-print('Правильные ответы:')
-pp(f'd = {d}, альтернативный метод d = {d_alter}')
+    assert(d_ == d)
 
-assert(d == d_alter)
+    print('Правильная проверочная матрица кода')
+    pp(H)
 
-print('Введенные ответы:')
-pp(f'd = {d_}')
+    print('Введенная проверочная матрица кода')
+    pp(H_)
 
-assert(d_ == d)
+    zero = sum(map(sum, lc.mult_M(G, lc.transpose(H))))
+    zero_ = sum(map(sum, lc.mult_M(G, lc.transpose(H_))))
 
-print('Правильная проверочная матрица кода')
-pp(H)
+    print('Контроль правильности проверочной матрицы')
+    ok = (zero == zero_ == 0)
+    pp(ok)
+    assert(ok)
 
-print('Введенная проверочная матрица кода')
-pp(H_)
+    wsV = wb['CodeVector']
+    s_ = []
+    a_ = []
+    for row in wsV.iter_rows(min_row = 1, max_col = max_n, max_row = 6, values_only = True):
+        row = list(filter(None.__ne__, row)) # Убирает ненужные None
+        g_Ok = is_bits_vector(row)
+        n_row = len(row)
+        if g_Ok and n_row >= min_n and n_row <= max_n:
+            s_.append(row) # Читаем декодированный кодовый вектор
+        if g_Ok and n_row >= min_k and n_row <= max_k:
+            a_.append(row) # Читаем декодированный информационный вектор
 
-zero = sum(map(sum, lc.mult_M(G, lc.transpose(H))))
-zero_ = sum(map(sum, lc.mult_M(G, lc.transpose(H_))))
+    assert(len(s_) == 1)
+    assert(len(a_) == 1)
 
-print('Контроль правильности проверочной матрицы')
-ok = (zero == zero_ == 0)
-pp(ok)
-assert(ok)
+    s_ = s_[0]
+    a_ = a_[0]
 
-wsV = wb['CodeVector']
-s_ = []
-a_ = []
-for row in wsV.iter_rows(min_row = 1, max_col = max_n, max_row = 6, values_only = True):
-    row = list(filter(None.__ne__, row)) # Убирает ненужные None
-    g_Ok = is_bits_vector(row)
-    n_row = len(row)
-    if g_Ok and n_row >= min_n and n_row <= max_n:
-        s_.append(row) # Читаем декодированный кодовый вектор
-    if g_Ok and n_row >= min_k and n_row <= max_k:
-        a_.append(row) # Читаем декодированный информационный вектор
+    n_ = len(s_)
+    k_ = len(a_)
 
-assert(len(s_) == 1)
-assert(len(a_) == 1)
+    assert(n_ == n)
+    assert(k_ == k)
 
-s_ = s_[0]
-a_ = a_[0]
+    ac = lc.get_min_adjacent_classes(H)
+    c = lc.mult_v(v, lc.transpose(H))
+    e = ac[tuple(c)]
+    s_est = lc.xor(v, e)
 
-n_ = len(s_)
-k_ = len(a_)
+    print('Скорректированный кодовый вектор')
+    pp(s_est)
 
-assert(n_ == n)
-assert(k_ == k)
+    print('Синдром')
+    pp(c)
 
-ac = lc.get_min_adjacent_classes(H)
-c = lc.mult_v(v, lc.transpose(H))
-e = ac[tuple(c)]
-s_est = lc.xor(v, e)
+    print('Вектор ошибки минимальной кратности')
+    pp(e)
 
-print('Скорректированный кодовый вектор')
-pp(s_est)
+    print('Введенный скорректированный кодовый вектор')
+    pp(s_)
 
-print('Синдром')
-pp(c)
+    zero = sum(lc.mult_v(s_est, lc.transpose(H)))
+    zero_ = sum(lc.mult_v(s_, lc.transpose(H_)))
 
-print('Вектор ошибки минимальной кратности')
-pp(e)
+    assert(zero == zero_ == 0)
 
-print('Введенный скорректированный кодовый вектор')
-pp(s_)
+    e_ = lc.xor(v, s_)
+    qe = lc.hamming_weight(e)
+    qe_ = lc.hamming_weight(e_)
 
-zero = sum(lc.mult_v(s_est, lc.transpose(H)))
-zero_ = sum(lc.mult_v(s_, lc.transpose(H_)))
+    assert(qe == qe_)
 
-assert(zero == zero_ == 0)
+    print('Найденный вектор ошибки наименьшей кратности')
+    pp(e)
+    print('Кратность')
+    pp(qe)
 
-e_ = lc.xor(v, s_)
-qe = lc.hamming_weight(e)
-qe_ = lc.hamming_weight(e_)
+    print('Вектор ошибки, соответствующий введенному кодовому вектору')
+    pp(e_)
+    print('Кратность')
+    pp(qe_)
 
-assert(qe == qe_)
+    a_est = lc.decode(s_est, G)
+    a__ = lc.decode(s_, G)
 
-print('Найденный вектор ошибки наименьшей кратности')
-pp(e)
-print('Кратность')
-pp(qe)
+    print('Информационный вектор')
+    pp(a__)
+    pp(s_)
 
-print('Вектор ошибки, соответствующий введенному кодовому вектору')
-pp(e_)
-print('Кратность')
-pp(qe_)
+    print('Введенный информационный вектор')
+    pp(a_)
+    pp(s_)
 
-a_est = lc.decode(s_est, G)
-a__ = lc.decode(s_, G)
+    assert(a__ == a_)
 
-print('Информационный вектор')
-pp(a__)
-pp(s_)
+    pp('All Ok')
 
-print('Введенный информационный вектор')
-pp(a_)
-pp(s_)
+if __name__ == "__main__":
+    mjr = sys.version_info.major
+    mnr = sys.version_info.minor
+    if (mjr == 3 and mnr < 7) or mjr < 3:
+        print('Требуется Python версии 3.7 и выше!')
+        exit()
 
-assert(a__ == a_)
+    task_code = '03'
+    fn = 'list_magister_titpi_2020.txt'
 
-pp('All Ok')
+    # Ограничения на параметры (n, k) кода
+    min_n = 6
+    max_n = 15
+    min_k = 3
+    max_k = 5
+    min_r = 2
 
+    assert(min_k < min_n)
+    assert(max_k < max_n)
+
+    students_file = open(fn, 'r', encoding = 'utf-8')
+    students = students_file.readlines()
+    group = ''
+    student = ''
+    for s in students:
+        s = s.strip()
+        if '#' in s:
+            continue
+        if s:
+            s_translit = pytils.translit.translify(s)
+            if has_numbers(s_translit):
+                group = s_translit
+            else:
+                student = s_translit
+                checker(group, student, task_code)

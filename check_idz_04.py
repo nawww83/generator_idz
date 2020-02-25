@@ -9,6 +9,11 @@ from pprint import pprint as pp
 from copy import deepcopy
 from scipy.special import comb
 import numpy as np
+import pytils.translit
+import re
+
+def has_numbers(s):
+    return re.search('\d', s)
 
 # Проверяет состоит ли вектор только из 0 и 1
 def is_bits_vector(v):
@@ -18,89 +23,113 @@ def is_bits_vector(v):
 def is_int_vector(v):
     return all(map(lambda x: isinstance(x, int), v))
 
-mjr = sys.version_info.major
-mnr = sys.version_info.minor
-if (mjr == 3 and mnr < 7) or mjr < 3:
-    print('Требуется Python версии 3.7 и выше!')
-    exit()
+def checker(group, student, task_code):
+    fname = f'{student}_{task_code}_{group}.xlsx'
 
-student = 'IvanovAA'
-task_code = '04'
-group = '1B6'
+    print(f'\n')
+    print(f'*********************')
+    print(f'Чтение файла {fname}')
 
-# Ограничения на параметры (n, k) кода
-min_n = 8
-max_n = 31
-min_k = 6
-max_k = 20
-min_r = 5
-# Ограничение на вероятность ошибки в BSC-канале
-p_min = 1.e-4
-p_max = 0.2
+    try:
+        wb = load_workbook(fname)
+    except FileNotFoundError:
+        print(f'Файл {fname} не найден')
+        return
 
-assert(min_k < min_n)
-assert(max_k < max_n)
+    ws = wb['Main']
+    params = []
+    for row in ws.iter_rows(min_row = 1, max_col = 1, max_row = 8, values_only = True):
+        row = list(filter(None.__ne__, row)) # Убирает ненужные None
+        n_row = len(row)
+        if n_row == 1 and (isinstance(row[0], int) or isinstance(row[0], float)):
+            params.append(row[0])
 
-fname = f'{student}_{task_code}_{group}.xlsx'
+    n_, k_, p_ = params
+    assert(k_ < n_)
+    assert(p_ <= p_max)
+    assert(p_ >= p_min)
 
-wb = load_workbook(fname)
+    r_ = n_ - k_
 
-ws = wb['Main']
-params = []
-for row in ws.iter_rows(min_row = 1, max_col = 1, max_row = 8, values_only = True):
-    row = list(filter(None.__ne__, row)) # Убирает ненужные None
-    n_row = len(row)
-    if n_row == 1 and (isinstance(row[0], int) or isinstance(row[0], float)):
-        params.append(row[0])
+    wsC = wb['Check']
+    params = []
+    for row in wsC.iter_rows(min_row = 1, max_col = 1, max_row = 8, values_only = True):
+        row = list(filter(None.__ne__, row)) # Убирает ненужные None
+        n_row = len(row)
+        if n_row == 1 and (isinstance(row[0], int) or isinstance(row[0], float)):
+            params.append(row[0])
 
-n_, k_, p_ = params
-assert(k_ < n_)
-assert(p_ <= p_max)
-assert(p_ >= p_min)
+    qi_, p_err_, p_bit_ = params
 
-r_ = n_ - k_
+    assert(qi_ > 0)
+    assert(qi_ <= r_ // 2)
 
-wsC = wb['Check']
-params = []
-for row in wsC.iter_rows(min_row = 1, max_col = 1, max_row = 8, values_only = True):
-    row = list(filter(None.__ne__, row)) # Убирает ненужные None
-    n_row = len(row)
-    if n_row == 1 and (isinstance(row[0], int) or isinstance(row[0], float)):
-        params.append(row[0])
+    print(f'Параметры (n, k)-кода: ({n_}, {k_})')
+    print(f'Число проверочных битов: {r_}')
 
-qi_, p_err_, p_bit_ = params
+    qi = lc.resolve_hamming_constrain(n_, k_)
 
-assert(qi_ > 0)
-assert(qi_ <= r_ // 2)
+    print(f'Введенная кратность исправляемой ошибки: qi = {qi_}')
+    print(f'Правильный ответ: qi = {qi}')
 
-print(f'Параметры (n, k)-кода: ({n_}, {k_})')
-print(f'Число проверочных битов: {r_}')
+    assert(qi_ == qi)
 
-qi = lc.resolve_hamming_constrain(n_, k_)
+    p_err, _ = lc.probability_bsc_more(qi_, n_, p_)
 
-print(f'Введенная кратность исправляемой ошибки: qi = {qi_}')
-print(f'Правильный ответ: qi = {qi}')
+    assert(p_err > 0.)
 
-assert(qi_ == qi)
+    print(f'Введенная вероятность ошибки: p_err = {p_err_}')
+    print(f'Правильный ответ: p_err = {p_err}')
 
-p_err, _ = lc.probability_bsc_more(qi_, n_, p_)
+    rel_error = np.abs(p_err - p_err_) / p_err
+    assert(rel_error < 0.01)
 
-assert(p_err > 0.)
+    d = 2 * qi + 1
+    p_bit = p_err * d / n_
 
-print(f'Введенная вероятность ошибки: p_err = {p_err_}')
-print(f'Правильный ответ: p_err = {p_err}')
+    print(f'Введенная вероятность битовой ошибки: p_bit = {p_bit_}')
+    print(f'Правильный ответ: p_bit = {p_bit}')
 
-rel_error = np.abs(p_err - p_err_) / p_err
-assert(rel_error < 0.01)
+    rel_error = np.abs(p_bit - p_bit_) / p_bit
+    assert(rel_error < 0.01)
 
-d = 2 * qi + 1
-p_bit = p_err * d / n_
+    print('All Ok')
 
-print(f'Введенная вероятность битовой ошибки: p_bit = {p_bit_}')
-print(f'Правильный ответ: p_bit = {p_bit}')
+if __name__ == "__main__":
+    mjr = sys.version_info.major
+    mnr = sys.version_info.minor
+    if (mjr == 3 and mnr < 7) or mjr < 3:
+        print('Требуется Python версии 3.7 и выше!')
+        exit()
 
-rel_error = np.abs(p_bit - p_bit_) / p_bit
-assert(rel_error < 0.01)
+    task_code = '04'
+    fn = 'list_magister_titpi_2020.txt'
 
-print('All Ok')
+    # Ограничения на параметры (n, k) кода
+    min_n = 8
+    max_n = 31
+    min_k = 6
+    max_k = 20
+    min_r = 5
+    # Ограничение на вероятность ошибки в BSC-канале
+    p_min = 1.e-4
+    p_max = 0.2
 
+    assert(min_k < min_n)
+    assert(max_k < max_n)
+
+    students_file = open(fn, 'r', encoding = 'utf-8')
+    students = students_file.readlines()
+    group = ''
+    student = ''
+    for s in students:
+        s = s.strip()
+        if '#' in s:
+            continue
+        if s:
+            s_translit = pytils.translit.translify(s)
+            if has_numbers(s_translit):
+                group = s_translit
+            else:
+                student = s_translit
+                checker(group, student, task_code)
