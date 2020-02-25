@@ -72,6 +72,8 @@ def checker(group, student, task_code):
     k = n - r
     assert(ok)
 
+    assert(sum(map(sum, H_)) > 0)
+
     assert((len(parameters) == 1))
 
     d_ = parameters[0]
@@ -190,7 +192,7 @@ if __name__ == "__main__":
         exit()
 
     task_code = '03'
-    fn = 'list_magister_titpi_2020.txt'
+    fn = 'list_bakalavr_ots_2020.txt'
 
     # Ограничения на параметры (n, k) кода
     min_n = 6

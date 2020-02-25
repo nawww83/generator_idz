@@ -67,7 +67,10 @@ def checker(group, student, task_code):
     k_ = n_ - r_
     assert(r_ == r)
     assert(n_ == n)
+
     assert(ok)
+
+    assert(sum(map(sum, H_)) > 0)
 
     assert((len(parameters) == 1))
 
