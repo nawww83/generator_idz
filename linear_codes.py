@@ -11,6 +11,7 @@ from itertools import combinations
 from copy import deepcopy
 from scipy.special import comb
 import numpy as np
+from progress.bar import Bar
 
 # Возвращает кортеж в виде (размеры матрицы, флаг проверки)
 # Проверяет вложенный список на соответствие матрице размером (rows, cols)
@@ -122,6 +123,7 @@ def gen_matrix(n, k, d_low):
     pops = 0
     eldl = exists_linear_dependence_level
     iterations = 1
+    bar = Bar('Processing', max = k)
     while len(Q) < k:
         w = -1
         lq = len(Q)
@@ -141,14 +143,16 @@ def gen_matrix(n, k, d_low):
             lq -= 1
             pops += 1
             if pops > max_pops:
-                print(f'... failed, formed {lq} rows, pops = {pops}, \
+                print(f'\n... failed, formed {lq} rows, pops = {pops}, \
 iterations = {iterations}', flush = True)
                 pops = 0
                 Q = []
                 iterations += 1
+                bar = Bar('Processing', max = k)
         else:
+            bar.next()
             if lq == k - 1:
-                print(f'... last row searching', flush = True)
+                #print(f'... last row searching', flush = True)
                 it = product([0, 1], repeat = r)
                 for q in it:
                     q = list(q)
@@ -166,13 +170,16 @@ iterations = {iterations}', flush = True)
                     if failed:
                         Q.pop()
                     else:
+                        bar.next()
                         break
                 if len(Q) < k:
                     pops = 0
                     Q = []
                     iterations += 1
-                    print(f'... failed {k}th (last) row searching', flush = True)
-    print(f'finished, formed {len(Q)} rows, {iterations} iterations', flush = True)
+                    print(f'\n... failed {k}th (last) row searching', flush = True)
+                    bar = Bar('Processing', max = k)
+    bar.finish()
+    print(f'\nfinished, formed {len(Q)} rows, {iterations} iterations', flush = True)
     G = augment(Ik, Q)
     return G, iterations
 
