@@ -12,6 +12,7 @@ from copy import deepcopy
 from scipy.special import comb
 import numpy as np
 from progress.bar import Bar
+from progress.bar import ChargingBar
 
 # Возвращает кортеж в виде (размеры матрицы, флаг проверки)
 # Проверяет вложенный список на соответствие матрице размером (rows, cols)
@@ -188,11 +189,17 @@ def gen_spectrum(G):
     k = len(G)
     it = product([0, 1], repeat = k)
     ws = {}
+    bar = ChargingBar('Processing', max = 2**k // k)
+    i = 0
     for a in it:
         s = mult_v(list(a), G)
         w = sum(s)
         ws[w] = ws.get(w, 0) + 1
+        i += 1
+        if not (i % k):
+            bar.next()
     ws = dict(sorted(ws.items()))
+    bar.finish()
     return ws
 
 # Возвращает кодовое (минимальное) расстояние d по спектру кода ws.
