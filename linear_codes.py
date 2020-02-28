@@ -119,7 +119,7 @@ def gen_matrix(n, k, d_low):
     Ir = identity(r)
     Q = []
     lq = len(Q)
-    max_pops = (k * (2 ** r)) // 2
+    max_pops = n * (k * (2 ** r)) // r
     pops = 0
     eldl = exists_linear_dependence_level
     iterations = 1
