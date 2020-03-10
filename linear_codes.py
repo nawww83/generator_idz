@@ -444,15 +444,15 @@ def reduce_to_basis_2(M, rows, cols):
 # строк матрицы M, содержащей cols строк
 def get_random_square_submatrix(M, rows, cols):
     assert(rows <= cols)
+    assert(len(M[0]) == rows)
     Sq = []
     used = set()
-    free = list(range(cols))
+    free = set(range(cols))
     while len(used) < rows:
-        i = choice(free)
-        if i not in used:
-            Sq.append(M[i])
-            used.add(i)
-            free.remove(i)
+        i = choice(tuple(free))
+        Sq.append(M[i])
+        used.add(i)
+        free.remove(i)
     return Sq, used
 
 # Возвращает проверочную матрицу H линейного кода по его порождающей матрице G
@@ -512,13 +512,39 @@ def get_min_adjacent_classes(H):
     it = product([0, 1], repeat = n)
     for e in it:
         e = list(e)
-        c = mult_v(e, HT)
-        address = tuple(c)
+        address = tuple( mult_v(e, HT) )
         w = hamming_weight(e)
         e_present = ac.get(address, ones)
         w_present = hamming_weight(e_present)
         if w < w_present:
             ac[address] = e
+    return ac
+
+# Версия 2: исключен перебор 2^n векторов ошибок => ускорен расчет
+def get_min_adjacent_classes_2(H):
+    r, n, ok = check_matrix(H)
+    assert(ok)
+    ac = {}
+    HT = transpose(H)
+    ones = [1] * n
+    Nc = 2 ** r
+    q = 0
+    while True:
+        it = combinations(range(n), q)
+        overwrite = False
+        for index in it:
+            e = [int(i in index) for i in range(n)]
+            address = tuple( mult_v(e, HT) )
+            #w = hamming_weight(e)
+            #assert(w == q)
+            e_present = ac.get(address, ones)
+            w_present = hamming_weight(e_present)
+            presented = (q >= w_present)
+            if not presented:
+                ac[address] = e
+        if len(ac) == Nc:
+            break
+        q += 1
     return ac
 
 # Возвращает кортеж в виде декодированного кодового вектора s, вектора ошибки

@@ -131,7 +131,7 @@ def checker(group, student, task_code):
     assert(n_ == n)
     assert(k_ == k)
 
-    ac = lc.get_min_adjacent_classes(H)
+    ac = lc.get_min_adjacent_classes_2(H)
     c = lc.mult_v(v, lc.transpose(H))
     e = ac[tuple(c)]
     s_est = lc.xor(v, e)

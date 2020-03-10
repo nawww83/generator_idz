@@ -81,7 +81,7 @@ while True:
     print(f'Received code vector v = {v}')
     print(f'Generation min adjacent classes...', flush = True)
     t0 = time.perf_counter()
-    ac = lc.get_min_adjacent_classes(Hsh)
+    ac = lc.get_min_adjacent_classes_2(Hsh)
     t1 = time.perf_counter()
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'Correction received vector...', flush = True)
