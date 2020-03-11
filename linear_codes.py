@@ -400,12 +400,51 @@ def find_basis_candidates(M, rows, cols):
             nonBasis = False
     return iloc_basis
 
+# Версия 2
+def find_basis_candidates_2(M, rows, cols):
+    assert(rows <= cols)
+    MT = transpose(M)
+    eldl = exists_linear_dependence_level
+    iter = 1
+    used = set()
+    free = set(range(cols))
+    Sq = []
+    iloc_basis = set() # Индексы столбцов M под базис
+    l = len(Sq)
+    max_iter = 2 * cols # Максимальное число выборок строки при неудачах
+    while l < rows:
+        i = choice(tuple(free))
+        ir = 1
+        is_good = ir > l+1
+        while not eldl(Sq, ir, 0, l, MT[i]):
+            ir += 1
+            is_good = ir > l+1
+            if is_good:
+                break
+        if is_good:
+            iloc_basis.add(i)
+            Sq.append(MT[i])
+            l += 1
+            used.add(i)
+            free.remove(i)
+        else:
+            iter += 1
+        if iter > max_iter: # Сброс набора из-за его неудачности в плане базиса
+            iter = 1
+            used = set()
+            free = set(range(cols))
+            used = set()
+            Sq = []
+            iloc_basis = set() # Индексы столбцов M под базис
+            l = len(Sq)
+    return iloc_basis
+
 # Версия 2. Алгоритмически ускорен расчет
 # (rows, cols) - размеры матрицы M
 def reduce_to_basis_2(M, rows, cols):
     # Индексы, закрепленные под базис
     print(f'... search basis ...', flush = True)
-    iloc_basis = find_basis_candidates(M, rows, cols)
+    iloc_basis = find_basis_candidates_2(M, rows, cols)
     print(f'    basis is found: {iloc_basis}', flush = True)
     Msh = M
     rows_locked = [] # Индексы строк для блокировки
@@ -599,7 +638,7 @@ def solve_le(v, M):
 def decode(s, G):
     k, n, ok = check_matrix(G)
     assert(ok)
-    iloc_basis = find_basis_candidates(G, k, n)
+    iloc_basis = find_basis_candidates_2(G, k, n)
     GT = transpose(G)
     s_cut = []
     GT_cut = []
