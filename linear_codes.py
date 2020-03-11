@@ -58,9 +58,7 @@ def identity(k):
 # Возвращает сумму по модулю два двух векторов
 def xor(x, y):
     assert(len(x) == len(y))
-    mod2 = [2] * len(x)
-    z = map(operator.add, x, y)
-    return list(map(operator.mod, z, mod2))
+    return list(map(operator.xor, x, y))
 
 # Возврашает сумму по модулю два элементов вектора v
 def xor1(v):
@@ -614,23 +612,29 @@ def solve_le(v, M):
     assert(rows == cols)
     Msh = transpose(M)
     rows_locked = [] # Индексы строк для блокировки
+    bar = ChargingBar('Processing', max = rows)
     while True:
         where_unity = find_unity_columns(Msh)
         active_unity = sorted(where_unity)
         uniq_cols = filter_uniq_unity_columns(active_unity, Msh)
         # Индексы строк для блокировки уже сформированных единичных столбцов
+        old_len = len(rows_locked)
         rows_locked = uniq_cols.keys()
-        if len(rows_locked) == rows: # Все rows столбцов - единичные и разные
+        new_len = len(rows_locked)
+        for i in range(new_len - old_len):
+            bar.next()
+        if new_len == rows: # Все rows столбцов - единичные и разные
             break
-        Msh, sh_rows, sh_cols = shuffle_matrix(Msh, 1, False, rows_locked)
-        for row in sh_rows:
-            v[row[1]] = (v[row[0]] + v[row[1]]) % 2
+        # Всегда 1 раз, т.е. две строки
+        Msh, row, _ = shuffle_matrix(Msh, 1, False, rows_locked)
+        v[row[0][1]] = (v[row[0][0]] ^ v[row[0][1]])
     Msh = transpose(Msh)
     where_unity = find_unity_columns(Msh)
     uniq_cols = filter_uniq_unity_columns(active_unity, Msh)
     w = [0] * rows
     for key, val in uniq_cols.items():
         w[key] = v[val]
+    bar.finish()
     return w
 
 # Возвращает информационный вектор a по кодовому вектору s и порождающей 
