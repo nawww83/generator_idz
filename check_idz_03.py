@@ -192,7 +192,7 @@ if __name__ == "__main__":
         exit()
 
     task_code = '03'
-    fn = 'list_magister_titpi_2020.txt'
+    fn = 'list_2020.txt'
 
     # Ограничения на параметры (n, k) кода
     min_n = 6

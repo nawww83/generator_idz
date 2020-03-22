@@ -118,7 +118,7 @@ if __name__ == "__main__":
         exit()
 
     task_code = '06'
-    fn = 'list_magister_titpi_2020.txt'
+    fn = 'list_2020.txt'
 
     # Ограничения на общее число участков, N
     n_min = 6

@@ -151,7 +151,7 @@ if __name__ == "__main__":
         exit()
 
     task_code = '07'
-    fn = 'list_magister_titpi_2020.txt'
+    fn = 'list_2020.txt'
 
     # Объем алфавита X
     m_alphabet = 3

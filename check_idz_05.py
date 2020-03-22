@@ -160,7 +160,7 @@ if __name__ == "__main__":
         exit()
 
     task_code = '05'
-    fn = 'list_magister_titpi_2020.txt'
+    fn = 'list_2020.txt'
 
     # Ограничения на вид модуляции
     m_min = 0
