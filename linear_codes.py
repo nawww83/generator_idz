@@ -118,7 +118,7 @@ def gen_matrix(n, k, d_low):
     Ir = identity(r)
     Q = []
     lq = len(Q)
-    max_pops = n * (k * (2 ** r)) // r
+    max_pops = 10000
     pops = 0
     eldl = exists_linear_dependence_level
     iterations = 1
@@ -136,18 +136,21 @@ def gen_matrix(n, k, d_low):
             if failed:
                 break
         Q.append(q)
-        lq += 1
+        lq = len(Q)
         if failed:
             Q.pop()
-            lq -= 1
+            lq = len(Q)
             pops += 1
             if pops > max_pops:
                 print(f'\n... failed, formed {lq} rows, pops = {pops}, \
 iterations = {iterations}', flush = True)
                 pops = 0
-                Q = []
+                Q.pop( randint(0, len(Q) - 1) )
+                lq = len(Q)
                 iterations += 1
                 bar = Bar('Processing', max = k)
+                for i in range(lq):
+                    bar.next()
         else:
             bar.next()
             if lq == k - 1:
@@ -165,7 +168,7 @@ iterations = {iterations}', flush = True)
                         if failed:
                             break
                     Q.append(q)
-                    lq += 1
+                    lq = len(Q)
                     if failed:
                         Q.pop()
                     else:
@@ -173,10 +176,12 @@ iterations = {iterations}', flush = True)
                         break
                 if len(Q) < k:
                     pops = 0
-                    Q = []
+                    Q.pop( randint(0, len(Q) - 1) )
                     iterations += 1
                     print(f'\n... failed {k}th (last) row searching', flush = True)
                     bar = Bar('Processing', max = k)
+                    for i in range(lq):
+                        bar.next()
     bar.finish()
     print(f'\nfinished, formed {len(Q)} rows, {iterations} iterations', flush = True)
     G = augment(Ik, Q)
@@ -401,13 +406,17 @@ def find_basis_candidates(M, rows, cols):
 # Версия 2
 def find_basis_candidates_2(M, rows, cols):
     assert(rows <= cols)
+    iloc_ = find_unity_columns(M) # Единичные всегда могут быть базисными
+    iloc_ = filter_uniq_unity_columns(iloc_, M)
+    uniq_basis = set(iloc_.values()) #set() # Индексы столбцов M под базис
     MT = transpose(M)
     eldl = exists_linear_dependence_level
     iter = 1
-    used = set()
-    free = set(range(cols))
+    used = deepcopy(uniq_basis)
+    free = set(range(cols)) - used
     Sq = []
-    iloc_basis = set() # Индексы столбцов M под базис
+    for i in used:
+        Sq.append(MT[i])
     l = len(Sq)
     max_iter = 2 * cols # Максимальное число выборок строки при неудачах
     while l < rows:
@@ -420,7 +429,6 @@ def find_basis_candidates_2(M, rows, cols):
             if is_good:
                 break
         if is_good:
-            iloc_basis.add(i)
             Sq.append(MT[i])
             l += 1
             used.add(i)
@@ -429,13 +437,13 @@ def find_basis_candidates_2(M, rows, cols):
             iter += 1
         if iter > max_iter: # Сброс набора из-за его неудачности в плане базиса
             iter = 1
-            used = set()
-            free = set(range(cols))
-            used = set()
+            used = deepcopy(uniq_basis)
+            free = set(range(cols)) - used
             Sq = []
-            iloc_basis = set() # Индексы столбцов M под базис
+            for i in used:
+                Sq.append(MT[i])
             l = len(Sq)
-    return iloc_basis
+    return used
 
 # Версия 2. Алгоритмически ускорен расчет
 # (rows, cols) - размеры матрицы M
