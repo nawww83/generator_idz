@@ -118,7 +118,7 @@ def gen_matrix(n, k, d_low):
     Ir = identity(r)
     Q = []
     lq = len(Q)
-    max_pops = 10000
+    max_pops = 3000
     pops = 0
     eldl = exists_linear_dependence_level
     iterations = 1
@@ -171,19 +171,23 @@ iterations = {iterations}', flush = True)
                     lq = len(Q)
                     if failed:
                         Q.pop()
+                        lq = len(Q)
                     else:
                         bar.next()
                         break
                 if len(Q) < k:
                     pops = 0
                     Q.pop( randint(0, len(Q) - 1) )
+                    lq = len(Q)
                     iterations += 1
-                    print(f'\n... failed {k}th (last) row searching', flush = True)
+                    print(f'\n... failed {k}th (last) row searching', \
+                        flush = True)
                     bar = Bar('Processing', max = k)
                     for i in range(lq):
                         bar.next()
     bar.finish()
-    print(f'\nfinished, formed {len(Q)} rows, {iterations} iterations', flush = True)
+    print(f'\nfinished, formed {len(Q)} rows, {iterations} iterations', \
+        flush = True)
     G = augment(Ik, Q)
     return G, iterations
 
@@ -274,6 +278,40 @@ def get_code_distance(H, silence):
             if not silence:
                 print(f'... at distance {d} estimation...', flush = True)
     return d
+
+def get_code_distance_2(H, silence):
+    r, n, ok = check_matrix(H)
+    assert(ok)
+    Hb, iloc, niloc = reduce_to_basis_2(H, r, n)
+    Hbt = transpose(Hb)
+    N = []
+    for i in niloc:
+        N.append(Hbt[i])
+    k = n - r
+    if not silence:
+        print(f'... at distance {1} estimation...', flush = True)
+    res = exists_linear_dependence(Hbt, 1, n)
+    if res:
+        return 1
+    d_max = r + 1
+    for i in range(k):
+        w = hamming_weight(N[i])
+        if w < d_max:
+            d_max = w + 1
+    if not silence:
+        print(f'... at distance {d_max} estimation...', flush = True)
+    for m in range(2, d_max):
+        it = combinations(range(k), m)
+        for index in it:
+            v = [int(i in index) for i in range(k)]
+            l = mult_v(v, N) # Линейная комбинация строк с весами v
+            w = hamming_weight(l)
+            if w + m < d_max:
+                d_max = w + m
+                if not silence:
+                    print(f'... at distance {d_max} estimation...', \
+                        flush = True)
+    return d_max
 
 # Возвращает перемешанную матрицу, а также список соответствующих пар 
 # индексов (i1, i2), где i1 - индекс строки, которая перезаписала с помощью xor
@@ -381,7 +419,7 @@ def reduce_to_basis(M, rows, cols):
     niloc.sort()
     return (Msh, iloc, niloc)
 
-# Возвращает индексы столбцов M, которые могут быть базисными
+# Возвращает индексы столбцов матрицы M, которые могут быть базисными
 def find_basis_candidates(M, rows, cols):
     assert(rows <= cols)
     MT = transpose(M)
