@@ -300,6 +300,7 @@ def get_code_distance_2(H, silence):
             d_max = w + 1
     if not silence:
         print(f'... at distance {d_max} estimation...', flush = True)
+    bar = ChargingBar('Processing', max = d_max - 2)
     for m in range(2, d_max):
         it = combinations(range(k), m)
         for index in it:
@@ -311,6 +312,10 @@ def get_code_distance_2(H, silence):
                 if not silence:
                     print(f'... at distance {d_max} estimation...', \
                         flush = True)
+        bar.next()
+        if m >= d_max:
+            break
+    bar.finish()
     return d_max
 
 # Возвращает перемешанную матрицу, а также список соответствующих пар 
