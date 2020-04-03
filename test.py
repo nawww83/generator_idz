@@ -9,7 +9,7 @@ import numpy as np
 min_n = 3
 max_n = 18
 min_k = 1
-max_k = 17
+max_k = 15
 min_r = 1
 
 assert(min_k < min_n)
@@ -88,7 +88,7 @@ while True:
     print(f'Received code vector v = {v}')
     print(f'Generation min adjacent classes...', flush = True)
     t0 = time.perf_counter()
-    ac = lc.get_min_adjacent_classes_2(Hsh)
+    ac = lc.get_min_adjacent_classes(Hsh)
     t1 = time.perf_counter()
     print(f'Elapsed {t1 - t0} s', flush = True)
     print(f'Correction received vector...', flush = True)
