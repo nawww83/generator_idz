@@ -282,18 +282,20 @@ def get_code_distance(H, silence):
 def get_code_distance_2(H, silence):
     r, n, ok = check_matrix(H)
     assert(ok)
-    Hb, iloc, niloc = reduce_to_basis_2(H, r, n)
+    Hb, iloc, niloc = reduce_to_basis(H, r, n)
+    if not Hb:
+        return 1
     Hbt = transpose(Hb)
     N = []
     for i in niloc:
         N.append(Hbt[i])
     k = n - r
+    d_max = r + 1
     if not silence:
         print(f'... at distance {1} estimation...', flush = True)
     res = exists_linear_dependence(Hbt, 1, n)
     if res:
         return 1
-    d_max = r + 1
     for i in range(k):
         w = hamming_weight(N[i])
         if w < d_max:
@@ -301,7 +303,7 @@ def get_code_distance_2(H, silence):
     if not silence:
         print(f'... at distance {d_max} estimation...', flush = True)
     bar = ChargingBar('Processing', max = d_max - 2)
-    for m in range(2, d_max):
+    for m in range(2, min(d_max, k + 1)):
         it = combinations(range(k), m)
         for index in it:
             v = [int(i in index) for i in range(k)]
@@ -404,50 +406,8 @@ def filter_uniq_unity_columns(iloc, M):
 def transpose(X):
     return list(map(list, zip(*X)))
 
-# Возвращает матрицу, эквивалентную M, такую, что она содержит базисные столбцы
-# Также возвращает индексы базисных строк iloc и небазисных niloc
-# Необходимо передавать верное число строк rows и столбцов cols, а также
-# правильную матрицу M, т.к. функция не контролирует правильность.
-def reduce_to_basis(M, rows, cols):
-    Msh = M
-    iloc = find_unity_columns(Msh)
-    iloc = filter_uniq_unity_columns(iloc, Msh)
-    # Перетасовываем матрицу M до тех пор, пока не получим матрицу, содержащую
-    # rows уникальных единичных столбцов - базис
-    while not iloc:
-        Msh, *_ = shuffle_matrix(M, cols, False)
-        iloc = find_unity_columns(Msh)
-        iloc = tune_uniq_unity_columns(iloc, Msh)
-    assert(len(iloc) == rows)
-    # Индексы остальных столбцов - не базис
-    niloc = list(set(range(cols)) - set(iloc))
-    niloc.sort()
-    return (Msh, iloc, niloc)
-
 # Возвращает индексы столбцов матрицы M, которые могут быть базисными
 def find_basis_candidates(M, rows, cols):
-    assert(rows <= cols)
-    MT = transpose(M)
-    nonBasis = True
-    eld = exists_linear_dependence
-    grss = get_random_square_submatrix
-    iloc_basis = set() # Индексы столбцов M под базис
-    while nonBasis: # Пока не найден базис
-        Msq, iloc_basis = grss(MT, rows, cols)
-        ir = 1
-        _nb = True
-        while ir <= rows:
-            _nb = eld(Msq, ir, rows)
-            if _nb or ir == rows:
-                break
-            ir += 1
-        if ir == rows and _nb == False: # Если нигде не было линейной 
-        # зависимости, то нашли базис (линейно независимые столбцы M)
-            nonBasis = False
-    return iloc_basis
-
-# Версия 2
-def find_basis_candidates_2(M, rows, cols):
     assert(rows <= cols)
     iloc_ = find_unity_columns(M) # Единичные всегда могут быть базисными
     iloc_ = filter_uniq_unity_columns(iloc_, M)
@@ -462,6 +422,7 @@ def find_basis_candidates_2(M, rows, cols):
         Sq.append(MT[i])
     l = len(Sq)
     max_iter = 2 * cols # Максимальное число выборок строки при неудачах
+    max_pops = rows # Максимальное число попыток [1..max_iter]
     while l < rows:
         i = choice(tuple(free))
         ir = 1
@@ -478,8 +439,11 @@ def find_basis_candidates_2(M, rows, cols):
             free.remove(i)
         else:
             iter += 1
+        if iter >= max_pops * max_iter:
+            return set()
         if iter > max_iter: # Сброс набора из-за его неудачности в плане базиса
-            iter = 1
+            if not Sq: # Из нулевых столбцов базис найти нельзя
+                return set()
             used = deepcopy(uniq_basis)
             free = set(range(cols)) - used
             Sq = []
@@ -488,12 +452,18 @@ def find_basis_candidates_2(M, rows, cols):
             l = len(Sq)
     return used
 
-# Версия 2. Алгоритмически ускорен расчет
-# (rows, cols) - размеры матрицы M
-def reduce_to_basis_2(M, rows, cols):
+# Возвращает матрицу, эквивалентную M, такую, что она содержит базисные столбцы
+# Также возвращает индексы базисных строк iloc и небазисных niloc
+# Необходимо передавать верное число строк rows и столбцов cols, а также
+# правильную матрицу M, т.к. функция не контролирует правильность.
+def reduce_to_basis(M, rows, cols):
     # Индексы, закрепленные под базис
     print(f'... search basis ...', flush = True)
-    iloc_basis = find_basis_candidates_2(M, rows, cols)
+    iloc_basis = find_basis_candidates(M, rows, cols)
+    if not iloc_basis:
+        niloc = list(range(cols))
+        print(f'    basis is not found', flush = True)
+        return [], iloc_basis, niloc
     print(f'    basis is found: {iloc_basis}', flush = True)
     Msh = M
     rows_locked = [] # Индексы строк для блокировки
@@ -549,7 +519,7 @@ def get_check_matrix(G):
     assert(ok)
     pi = list(range(n)) # Вектор перестановок
     # BS = reduce_to_basis(G, k, n)
-    Gsh, iloc, niloc = reduce_to_basis_2(G, k, n)
+    Gsh, iloc, niloc = reduce_to_basis(G, k, n)
     Gsht = transpose(Gsh)
     for c in iloc:
         i = Gsht[c].index(1) # Позиция единицы в столбце
@@ -592,24 +562,6 @@ def get_adjacent_classes(H):
 # Здесь c - вектор синдрома c = eH^T, e - соответствующий вектор ошибки 
 # минимальной кратности
 def get_min_adjacent_classes(H):
-    r, n, ok = check_matrix(H)
-    assert(ok)
-    ac = {}
-    HT = transpose(H)
-    ones = [1] * n
-    it = product([0, 1], repeat = n)
-    for e in it:
-        e = list(e)
-        address = tuple( mult_v(e, HT) )
-        w = hamming_weight(e)
-        e_present = ac.get(address, ones)
-        w_present = hamming_weight(e_present)
-        if w < w_present:
-            ac[address] = e
-    return ac
-
-# Версия 2: исключен перебор 2^n векторов ошибок => ускорен расчет
-def get_min_adjacent_classes_2(H):
     r, n, ok = check_matrix(H)
     assert(ok)
     ac = {}
@@ -693,7 +645,7 @@ def solve_le(v, M):
 def decode(s, G):
     k, n, ok = check_matrix(G)
     assert(ok)
-    iloc_basis = find_basis_candidates_2(G, k, n)
+    iloc_basis = find_basis_candidates(G, k, n)
     GT = transpose(G)
     s_cut = []
     GT_cut = []
