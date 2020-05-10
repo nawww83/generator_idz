@@ -131,6 +131,7 @@ def checker(group, student, task_code):
 
     k = int(round(R * n))
     qi = lc.resolve_hamming_constrain(n, k)
+    R = k / n # Пересчет скорости кодирования
 
     print(f'Скорость кодирования R: {R}')
     EbN0_dB = er.pow2dB(EbN0_min)
