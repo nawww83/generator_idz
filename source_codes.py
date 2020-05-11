@@ -138,7 +138,7 @@ def make_huffman_table(al):
             code_tree[t].append(0)
         # Т.к. нижний символ удален, то его (значение) следует запомнить в
         # истории trace текущего символа
-        trace[last] += trace[last + 1]
+        trace[last] += trace.pop(last + 1)
         if last > 1:
             ii = last - 1
             # Нижний символ всплывает вверх до своего уровня (по вероятности)
