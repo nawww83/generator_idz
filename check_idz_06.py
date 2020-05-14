@@ -54,8 +54,10 @@ def checker(group, student, task_code):
 
     wsC = wb['Check']
     params = []
-    for row in wsC.iter_rows(min_row = 1, max_col = 1, max_row = 10, values_only = True):
+    for row in wsC.iter_rows(min_row = 1, max_col = 1, max_row = 9, values_only = True):
         row = list(filter(None.__ne__, row)) # Убирает ненужные None
+        if not row:
+            continue
         n_row = len(row)
         if n_row == 1 and isinstance(row[0], float) or isinstance(row[0], int):
             params.append(row[0])
