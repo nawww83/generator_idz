@@ -131,9 +131,11 @@ def checker(group, student, task_code):
 
     k = int(round(R * n))
     qi = lc.resolve_hamming_constrain(n, k)
-    R = k / n # Пересчет скорости кодирования
+    Rm = k / n # Пересчет скорости кодирования
+    EsN0 = er.EsN0(EbN0_min, R, M) # Пересчет сигнал-шум
+    EbN0_min = er.EbN0(EsN0, Rm, M)
 
-    print(f'Скорость кодирования R: {R}')
+    print(f'Скорость кодирования R: {Rm}')
     EbN0_dB = er.pow2dB(EbN0_min)
     print(f'EbN0: {EbN0_dB:.4f} дБ')
     #
@@ -148,7 +150,7 @@ def checker(group, student, task_code):
     rel_error = np.fabs(EbN0_dB - EbN0_dB_) / EbN0_dB
     assert(rel_error < 0.01)
     
-    rel_error = np.fabs(R - R_) / R
+    rel_error = np.fabs(Rm - R_) / Rm
     assert(rel_error < 0.01)
 
     print('All Ok')
